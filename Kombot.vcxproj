@@ -137,10 +137,17 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClInclude Include="kombot_aim.h" />
+    <ClInclude Include="kombot_error.h" />
+    <ClInclude Include="kombot_input.h" />
+    <ClInclude Include="kombot_reftypes.h" />
     <ClInclude Include="pch.h" />
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="main.c" />
+    <ClCompile Include="kombot.c" />
+    <ClCompile Include="kombot_aim.c" />
+    <ClCompile Include="kombot_error.c" />
+    <ClCompile Include="kombot_input.c" />
     <ClCompile Include="pch.c">
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Create</PrecompiledHeader>
       <PrecompiledHeaderFile Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">pch.h</PrecompiledHeaderFile>
