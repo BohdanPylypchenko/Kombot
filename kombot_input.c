@@ -2,8 +2,15 @@
 
 #include "kombot_input.h"
 
-#include "kombot_error.h"
 #include "kombot_reftypes.h"
+#include "kombot_exception.h"
+
+typedef struct {
+    HHOOK keyboard_hook;
+    HHOOK mouse_hook;
+} kombot_input_state;
+
+static kombot_input_state state;
 
 static LRESULT CALLBACK kombot_keyboard_proc(
     int code,
@@ -25,7 +32,7 @@ static LRESULT CALLBACK kombot_mouse_proc(
     int code,
     WPARAM wparam, LPARAM lparam
 ) {
-    if (code == HC_ACTION && wparam == WM_LBUTTONDOWN) {
+    if (code == HC_ACTION && wparam == KOMBOT_ACTIVATION_MOUSE) {
         // TO-DO: call something
         printf("kombot mouse left click pressed\n");
     }
@@ -33,26 +40,18 @@ static LRESULT CALLBACK kombot_mouse_proc(
     return CallNextHookEx(NULL, code, wparam, lparam);
 }
 
-KOMBOT_PTR(kombot_input_state) kombot_input_state_init(
-    KOMBOT_CONSTREF_RPTR(kombot_input_state) state
-) {
-    state->keyboard_hook = SetWindowsHookEx(WH_KEYBOARD_LL, kombot_keyboard_proc, NULL, 0);
-    state->mouse_hook = SetWindowsHookEx(WH_MOUSE_LL, kombot_mouse_proc, NULL, 0);
+void kombot_input_state_init(void) {
+    state.keyboard_hook = SetWindowsHookEx(WH_KEYBOARD_LL, kombot_keyboard_proc, NULL, 0);
+    state.mouse_hook = SetWindowsHookEx(WH_MOUSE_LL, kombot_mouse_proc, NULL, 0);
 
-    if (state->keyboard_hook && state->mouse_hook) {
-        return state;
-    } else {
-        kombot_error_set_global(
-            KOMBOT_ERROR_INPUT_INIT,
-            GetLastError()
-        );
-        return NULL;
+    if (!state.keyboard_hook || !state.mouse_hook) {
+        kombot_raise_exception(KOMBOT_EXCEPTION_INPUT_INIT);
     }
 }
 
-void kombot_input_state_free(
-    KOMBOT_CONST_RPTR(kombot_input_state) state
-) {
-    UnhookWindowsHookEx(state->keyboard_hook);
-    UnhookWindowsHookEx(state->mouse_hook);
+void kombot_input_state_free(KOMBOT_PTR(void) pstate) {
+    UNREFERENCED_PARAMETER(pstate);
+
+    UnhookWindowsHookEx(state.keyboard_hook);
+    UnhookWindowsHookEx(state.mouse_hook);
 }
