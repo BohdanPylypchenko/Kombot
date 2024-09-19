@@ -2,8 +2,7 @@
 
 #include "kombot_reftypes.h"
 
-#define KOMBOT_SCREEN_HPROP0RTION 16
-#define KOMBOT_SCREEN_VPROP0RTION 10
+#define KOMBOT_AIM_SCREEN_DELTA_PXL 120
 
 void kombot_aim_init(void);
 

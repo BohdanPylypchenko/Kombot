@@ -7,20 +7,30 @@
 #include "kombot_resource.h"
 
 typedef struct {
+    BYTE blue;
+    BYTE green;
+    BYTE red;
+} kombot_bgr_pixel;
+
+typedef struct {
     HANDLE aim_thread;
     BOOL continue_flag;
 
     HDC h_screen_dc;
     HDC h_memory_dc;
 
-    int screen_resolution_w;
-    int screen_resolution_h;
+    UINT screen_resolution_w;
+    UINT screen_resolution_h;
 
-    int screen_delta;
-    int aim_frame_wh;
+    UINT screen_delta;
+    LONG aim_frame_wh;
 
     HBITMAP aim_bitmap_old;
     HBITMAP aim_bitmap;
+
+    BITMAPINFOHEADER aim_bitmap_header;
+    DWORD aim_bitmap_size;
+    KOMBOT_PTR(BYTE) aim_bitmap_data;
 
     ULONGLONG frame_count;
 } kombot_aim_state;
@@ -28,69 +38,11 @@ typedef struct {
 static kombot_aim_state state;
 static char screenshotbuf[128];
 
-// Function to save the bitmap to a file
-static void SaveBitmapToFile(HBITMAP hBitmap, HDC hDC, int width, int height, const char * filePath) {
-    BITMAPFILEHEADER bfHeader;
-    BITMAPINFOHEADER biHeader;
-    BITMAPINFO bInfo;
-    FILE * file;
-    char * bmpData;
-    int size;
-
-    // Initialize headers
-    memset(&bfHeader, 0, sizeof(BITMAPFILEHEADER));
-    memset(&biHeader, 0, sizeof(BITMAPINFOHEADER));
-    memset(&bInfo, 0, sizeof(BITMAPINFO));
-
-    biHeader.biSize = sizeof(BITMAPINFOHEADER);
-    biHeader.biWidth = width;
-    biHeader.biHeight = -height; // negative to prevent flipping
-    biHeader.biPlanes = 1;
-    biHeader.biBitCount = 24; // 24 bits for RGB
-    biHeader.biCompression = BI_RGB;
-
-    size = ((width * biHeader.biBitCount + 31) / 32) * 4 * height; // Calculate bitmap size
-
-    bmpData = (char *)HeapAlloc(GetProcessHeap(), 0, size);
-
-    // Get the bitmap data from the HBITMAP
-    if (!GetDIBits(hDC, hBitmap, 0, height, bmpData, (BITMAPINFO *)&biHeader, DIB_RGB_COLORS)) {
-        HeapFree(GetProcessHeap(), 0, bmpData);
-        return;
-    }
-
-    // Create a file to save the bitmap
-    if (fopen_s(&file, filePath, "wb") != 0) {
-        fprintf(stderr, "Error: can't create result file\n");
-        HeapFree(GetProcessHeap(), 0, bmpData);
-        return;
-    }
-
-    // Write the file header
-    bfHeader.bfType = 0x4D42; // 'BM'
-    bfHeader.bfOffBits = sizeof(BITMAPFILEHEADER) + sizeof(BITMAPINFOHEADER);
-    bfHeader.bfSize = bfHeader.bfOffBits + size;
-    fwrite(&bfHeader, sizeof(BITMAPFILEHEADER), 1, file);
-
-    // Write the info header
-    fwrite(&biHeader, sizeof(BITMAPINFOHEADER), 1, file);
-
-    // Write the bitmap data
-    fwrite(bmpData, size, 1, file);
-
-    // Close the file and free memory
-    fclose(file);
-    HeapFree(GetProcessHeap(), 0, bmpData);
-}
-
 static DWORD WINAPI aim_thread_proc(LPVOID parameter) {
     UNREFERENCED_PARAMETER(parameter);
 
     __try {
         while (state.continue_flag) {
-            //printf("aiming...\n");
-            //Sleep(100);
-
             BitBlt(
                 state.h_memory_dc,
                 0, 0,
@@ -109,13 +61,72 @@ static DWORD WINAPI aim_thread_proc(LPVOID parameter) {
                 state.frame_count++
             );
 
-            SaveBitmapToFile(
-                state.aim_bitmap,
-                state.h_memory_dc,
-                state.aim_frame_wh,
-                state.aim_frame_wh,
-                screenshotbuf
-            );
+            if (!GetDIBits(
+                    state.h_memory_dc,
+                    state.aim_bitmap,
+                    0, state.aim_frame_wh,
+                    state.aim_bitmap_data,
+                    (BITMAPINFO*)&state.aim_bitmap_header,
+                    DIB_RGB_COLORS
+            )) {
+                kombot_exception_raise(9999);
+            }
+
+            UINT target_x = 0;
+            UINT target_y = 0;
+            UINT border_pixel_count = 0;
+
+            KOMBOT_CONSTREF_RPTR(kombot_bgr_pixel) pixel_arr =
+                (KOMBOT_CONSTREF_RPTR(kombot_bgr_pixel))state.aim_bitmap_data;
+
+            for (LONG y = 0; y < state.aim_frame_wh; y++) {
+                UINT y_index_offset = y * state.aim_frame_wh;
+                for (LONG x = 0; x < state.aim_frame_wh; x++) {
+                    DWORD index = y_index_offset + x;
+                    KOMBOT_CONSTREF_RPTR(kombot_bgr_pixel) current_pixel = &pixel_arr[index];
+
+                    if (current_pixel->blue == 0 && current_pixel->green == 0 && current_pixel->red == 254) {
+                        border_pixel_count++;
+                        target_x += x;
+                        target_y += y;
+                    }
+                    else {
+                        current_pixel->blue = 0;
+                        current_pixel->green = 0;
+                        current_pixel->red = 0;
+                    }
+                }
+            }
+
+            if (border_pixel_count != 0) {
+                printf("border pixel count = %u\n", border_pixel_count);
+                target_x /= border_pixel_count;
+                target_y /= border_pixel_count;
+
+                DWORD target_index = target_y * state.aim_frame_wh + target_x;
+                KOMBOT_CONSTREF_RPTR(kombot_bgr_pixel) target_pixel = &pixel_arr[target_index];
+                target_pixel->blue = 255;
+                target_pixel->green = 255;
+                target_pixel->red = 255;
+            }
+
+            KOMBOT_PTR(FILE) file;
+            BITMAPFILEHEADER bfHeader;
+
+            if (fopen_s(&file, screenshotbuf, "wb") != 0) {
+                kombot_exception_raise(9999);
+            }
+
+            bfHeader.bfType = 0x4D42;
+            bfHeader.bfOffBits = sizeof(BITMAPFILEHEADER) + sizeof(BITMAPINFOHEADER);
+            bfHeader.bfSize = bfHeader.bfOffBits + state.aim_bitmap_size;
+            fwrite(&bfHeader, sizeof(BITMAPFILEHEADER), 1, file);
+
+            fwrite(&state.aim_bitmap_header, sizeof(BITMAPINFOHEADER), 1, file);
+
+            fwrite(state.aim_bitmap_data, state.aim_bitmap_size, 1, file);
+
+            fclose(file);
         }
         return 0;
     }
@@ -137,13 +148,7 @@ void kombot_aim_init(void) {
     state.screen_resolution_w = GetDeviceCaps(state.h_screen_dc, HORZRES);
     state.screen_resolution_h = GetDeviceCaps(state.h_screen_dc, VERTRES);
 
-    int t1 = state.screen_resolution_w / KOMBOT_SCREEN_HPROP0RTION;
-    int t2 = state.screen_resolution_h / KOMBOT_SCREEN_VPROP0RTION;
-    if (t1 != t2) {
-        kombot_exception_raise(KOMBOT_EXCEPTION_AIM_DELTA_FAIL);
-    }
-    state.screen_delta = t1;
-
+    state.screen_delta = KOMBOT_AIM_SCREEN_DELTA_PXL;
     state.aim_frame_wh = state.screen_delta * 2;
     state.aim_bitmap = CreateCompatibleBitmap(
         state.h_screen_dc,
@@ -151,6 +156,23 @@ void kombot_aim_init(void) {
         state.aim_frame_wh
     );
     state.aim_bitmap_old = (HBITMAP)SelectObject(state.h_memory_dc, state.aim_bitmap);
+
+    memset(&state.aim_bitmap_header, 0, sizeof(BITMAPINFOHEADER));
+
+    state.aim_bitmap_header.biSize = sizeof(BITMAPINFOHEADER);
+    state.aim_bitmap_header.biWidth = state.aim_frame_wh;
+    state.aim_bitmap_header.biHeight = -state.aim_frame_wh;
+    state.aim_bitmap_header.biPlanes = 1;
+    state.aim_bitmap_header.biBitCount = 24;
+    state.aim_bitmap_header.biCompression = BI_RGB;
+
+    state.aim_bitmap_size =
+    ((state.aim_frame_wh * state.aim_bitmap_header.biBitCount + 31) / 32) * 4 * state.aim_frame_wh;
+
+    state.aim_bitmap_data = (KOMBOT_PTR(BYTE))HeapAlloc(GetProcessHeap(), 0, state.aim_bitmap_size);
+    if (state.aim_bitmap_data == NULL) {
+        kombot_exception_raise(KOMBOT_EXCEPTION_AIM_BITMAP_DATA_ALLOC_FAIL);
+    }
 
     state.frame_count = 0;
 }
@@ -182,4 +204,5 @@ void kombot_aim_free(KOMBOT_PTR(void) pstate) {
     DeleteObject(state.aim_bitmap);
     DeleteDC(state.h_memory_dc);
     ReleaseDC(NULL, state.h_screen_dc);
+    HeapFree(GetProcessHeap(), 0, state.aim_bitmap_data);
 }

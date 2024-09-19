@@ -7,13 +7,9 @@
 #include "kombot_exception.h"
 
 static BOOL WINAPI kombot_exit_handler(DWORD ctrl_type) {
-    if (ctrl_type == CTRL_C_EVENT || ctrl_type == CTRL_CLOSE_EVENT) {
+    if (ctrl_type == CTRL_C_EVENT || ctrl_type == CTRL_CLOSE_EVENT)
         kombot_resource_freeall();
-        return TRUE;
-    }
-    else {
-        return FALSE;
-    }
+    return FALSE;
 }
 
 void kombot_user_exit_handler_init(void) {
