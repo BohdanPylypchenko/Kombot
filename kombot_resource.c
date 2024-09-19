@@ -4,6 +4,7 @@
 
 #include "kombot_reftypes.h"
 #include "kombot_input.h"
+#include "kombot_aim.h"
 
 #define KOMBOT_RESOURCE_MAX_COUNT 8
 
@@ -31,8 +32,11 @@ static void kombot_resource_add(
 void kombot_resource_init(void) {
     resource_holder.count = 0;
 
-    kombot_input_state_init();
-    kombot_resource_add(NULL, kombot_input_state_free);
+    kombot_input_init();
+    kombot_resource_add(NULL, kombot_input_free);
+
+    kombot_aim_init();
+    kombot_resource_add(NULL, kombot_aim_free);
 }
 
 void kombot_resource_freeall(void) {

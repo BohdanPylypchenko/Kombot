@@ -5,7 +5,8 @@
 
 #define KOMBOT_ACTIVATION_KEY '9'
 #define KOMBOT_ACTIVATION_MOUSE WM_LBUTTONDOWN
+#define KOMBOT_DEACTIVATION_MOUSE WM_LBUTTONUP
 
-void kombot_input_state_init(void);
+void kombot_input_init(void);
 
-void kombot_input_state_free(KOMBOT_PTR(void) pstate);
+void kombot_input_free(KOMBOT_PTR(void) pstate);

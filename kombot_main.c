@@ -31,6 +31,14 @@ static DWORD exception_filter(DWORD ecode) {
             "\n", ecode, extracted_ecode
         );
         break;
+    case KOMBOT_EXCEPTION_AIM_DELTA_FAIL:
+        fprintf(
+            stderr,
+            "Error: horizontal screen delta != vertical screen delta, "
+            "exception code = %d; "
+            "extracted exception code = %d"
+            "\n", ecode, extracted_ecode
+        );
     default:
         fprintf(
             stderr,
