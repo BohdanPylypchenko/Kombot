@@ -17,35 +17,36 @@ static DWORD exception_filter(DWORD ecode) {
         fprintf(
             stderr,
             "Error: failed to initialize CtrlConsole event handler, "
-            "exception code = %d; "
+            "GetLastError = %d; "
             "extracted exception code = %d"
-            "\n", ecode, extracted_ecode
+            "\n", GetLastError(), extracted_ecode
         );
         break;
     case KOMBOT_EXCEPTION_INPUT_INIT:
         fprintf(
             stderr,
             "Error: failed to initialize keyboard/mouse hooks, "
-            "exception code = %d; "
+            "GetLastError = %d; "
             "extracted exception code = %d"
-            "\n", ecode, extracted_ecode
+            "\n", GetLastError(), extracted_ecode
         );
         break;
-    case KOMBOT_EXCEPTION_AIM_DELTA_FAIL:
+    case KOMBOT_EXCEPTION_AIM_BITMAP_DATA_ALLOC_FAIL:
         fprintf(
             stderr,
-            "Error: horizontal screen delta != vertical screen delta, "
-            "exception code = %d; "
+            "Error: failed to allocate memory for aim frame, "
+            "GetLastError = %d; "
             "extracted exception code = %d"
-            "\n", ecode, extracted_ecode
+            "\n", GetLastError(), extracted_ecode
         );
+        break;
     default:
         fprintf(
             stderr,
             "Error: unexpected exception, "
-            "exception code = %d; "
+            "GetLastError = %d; "
             "extracted exception code = %d"
-            "\n", ecode, extracted_ecode
+            "\n", GetLastError(), extracted_ecode
         );
         break;
     }
