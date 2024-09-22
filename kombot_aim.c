@@ -32,11 +32,10 @@ typedef struct {
     DWORD aim_bitmap_size;
     KOMBOT_PTR(BYTE) aim_bitmap_data;
 
-    ULONGLONG frame_count;
+    INPUT aim_input;
 } kombot_aim_state;
 
 static kombot_aim_state state;
-static char screenshotbuf[128];
 
 static DWORD WINAPI aim_thread_proc(LPVOID parameter) {
     UNREFERENCED_PARAMETER(parameter);
@@ -54,13 +53,6 @@ static DWORD WINAPI aim_thread_proc(LPVOID parameter) {
                 SRCCOPY
             );
 
-            sprintf_s(
-                screenshotbuf,
-                128 * sizeof(char),
-                "screen-%llu.bmp",
-                state.frame_count++
-            );
-
             if (!GetDIBits(
                     state.h_memory_dc,
                     state.aim_bitmap,
@@ -72,8 +64,8 @@ static DWORD WINAPI aim_thread_proc(LPVOID parameter) {
                 kombot_exception_raise(9999);
             }
 
-            UINT target_x = 0;
-            UINT target_y = 0;
+            LONG target_x = 0;
+            LONG target_y = 0;
             UINT border_pixel_count = 0;
 
             KOMBOT_CONSTREF_RPTR(kombot_bgr_pixel) pixel_arr =
@@ -85,15 +77,13 @@ static DWORD WINAPI aim_thread_proc(LPVOID parameter) {
                     DWORD index = y_index_offset + x;
                     KOMBOT_CONSTREF_RPTR(kombot_bgr_pixel) current_pixel = &pixel_arr[index];
 
-                    if (current_pixel->blue == 0 && current_pixel->green == 0 && current_pixel->red == 254) {
+                    if (current_pixel->blue == KOMBOT_AIM_PIXEL_BLUE &&
+                        current_pixel->green == KOMBOT_AIM_PIXEL_GREEN &&
+                        current_pixel->red == KOMBOT_AIM_PIXEL_RED
+                    ) {
                         border_pixel_count++;
                         target_x += x;
                         target_y += y;
-                    }
-                    else {
-                        current_pixel->blue = 0;
-                        current_pixel->green = 0;
-                        current_pixel->red = 0;
                     }
                 }
             }
@@ -103,30 +93,27 @@ static DWORD WINAPI aim_thread_proc(LPVOID parameter) {
                 target_x /= border_pixel_count;
                 target_y /= border_pixel_count;
 
-                DWORD target_index = target_y * state.aim_frame_wh + target_x;
-                KOMBOT_CONSTREF_RPTR(kombot_bgr_pixel) target_pixel = &pixel_arr[target_index];
-                target_pixel->blue = 255;
-                target_pixel->green = 255;
-                target_pixel->red = 255;
+                // movement does not in game !!!
+                SetCursorPos(
+                    target_x + (state.screen_resolution_w / 2 - state.screen_delta),
+                    target_y + (state.screen_resolution_h / 2 - state.screen_delta)
+                );
+
+                // movement does not in game !!!
+                //LONG mw = state.screen_resolution_w / 2;
+                //LONG mh = state.screen_resolution_h / 2;
+                //state.aim_input.mi.dx = (target_x + (mw - state.screen_delta)) - mw;
+                //state.aim_input.mi.dy = (target_y + (mh - state.screen_delta)) - mh;
+                //printf("dx = %d\n", state.aim_input.mi.dx);
+                //printf("dy = %d\n", state.aim_input.mi.dy);
+                //SendInput(1, &state.aim_input, sizeof(INPUT));
+
+                // movement does not in game !!!
+                //SetPhysicalCursorPos(
+                //    target_x + (state.screen_resolution_w / 2 - state.screen_delta),
+                //    target_y + (state.screen_resolution_h / 2 - state.screen_delta)
+                //);
             }
-
-            KOMBOT_PTR(FILE) file;
-            BITMAPFILEHEADER bfHeader;
-
-            if (fopen_s(&file, screenshotbuf, "wb") != 0) {
-                kombot_exception_raise(9999);
-            }
-
-            bfHeader.bfType = 0x4D42;
-            bfHeader.bfOffBits = sizeof(BITMAPFILEHEADER) + sizeof(BITMAPINFOHEADER);
-            bfHeader.bfSize = bfHeader.bfOffBits + state.aim_bitmap_size;
-            fwrite(&bfHeader, sizeof(BITMAPFILEHEADER), 1, file);
-
-            fwrite(&state.aim_bitmap_header, sizeof(BITMAPINFOHEADER), 1, file);
-
-            fwrite(state.aim_bitmap_data, state.aim_bitmap_size, 1, file);
-
-            fclose(file);
         }
         return 0;
     }
@@ -174,7 +161,8 @@ void kombot_aim_init(void) {
         kombot_exception_raise(KOMBOT_EXCEPTION_AIM_BITMAP_DATA_ALLOC_FAIL);
     }
 
-    state.frame_count = 0;
+    state.aim_input.type = INPUT_MOUSE;
+    state.aim_input.mi.dwFlags = MOUSEEVENTF_MOVE;
 }
 
 void kombot_aim_start(void) {
