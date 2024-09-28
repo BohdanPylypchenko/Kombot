@@ -19,10 +19,10 @@ typedef struct {
     HDC h_screen_dc;
     HDC h_memory_dc;
 
-    UINT screen_resolution_w;
-    UINT screen_resolution_h;
+    LONG screen_resolution_w;
+    LONG screen_resolution_h;
 
-    UINT screen_delta;
+    LONG screen_delta;
     LONG aim_frame_wh;
 
     HBITMAP aim_bitmap_old;
@@ -72,7 +72,7 @@ static DWORD WINAPI aim_thread_proc(LPVOID parameter) {
                 (KOMBOT_CONSTREF_RPTR(kombot_bgr_pixel))state.aim_bitmap_data;
 
             for (LONG y = 0; y < state.aim_frame_wh; y++) {
-                UINT y_index_offset = y * state.aim_frame_wh;
+                LONG y_index_offset = y * state.aim_frame_wh;
                 for (LONG x = 0; x < state.aim_frame_wh; x++) {
                     DWORD index = y_index_offset + x;
                     KOMBOT_CONSTREF_RPTR(kombot_bgr_pixel) current_pixel = &pixel_arr[index];
@@ -89,33 +89,24 @@ static DWORD WINAPI aim_thread_proc(LPVOID parameter) {
             }
 
             if (border_pixel_count != 0) {
-                printf("border pixel count = %u\n", border_pixel_count);
+                //printf("border pixel count = %u\n", border_pixel_count);
+
                 target_x /= border_pixel_count;
                 target_y /= border_pixel_count;
 
-                // movement does not in game !!!
-                SetCursorPos(
-                    target_x + (state.screen_resolution_w / 2 - state.screen_delta),
-                    target_y + (state.screen_resolution_h / 2 - state.screen_delta)
-                );
+                //printf("target x = %d\n", target_x);
+                //printf("target y = %d\n", target_y);
 
-                // movement does not in game !!!
-                //LONG mw = state.screen_resolution_w / 2;
-                //LONG mh = state.screen_resolution_h / 2;
-                //state.aim_input.mi.dx = (target_x + (mw - state.screen_delta)) - mw;
-                //state.aim_input.mi.dy = (target_y + (mh - state.screen_delta)) - mh;
-                //printf("dx = %d\n", state.aim_input.mi.dx);
-                //printf("dy = %d\n", state.aim_input.mi.dy);
-                //SendInput(1, &state.aim_input, sizeof(INPUT));
+                state.aim_input.mi.dx = 6 * (target_x - state.screen_delta);
+                state.aim_input.mi.dy = 6 * (target_y - state.screen_delta);
 
-                // movement does not in game !!!
-                //SetPhysicalCursorPos(
-                //    target_x + (state.screen_resolution_w / 2 - state.screen_delta),
-                //    target_y + (state.screen_resolution_h / 2 - state.screen_delta)
-                //);
+                //printf("fdx = %d\n", state.aim_input.mi.dx);
+                //printf("fdy = %d\n", state.aim_input.mi.dy);
+
+                SendInput(1, &state.aim_input, sizeof(INPUT));
             }
         }
-        return 0;
+        return KOMBOT_SUCCESS;
     }
     __except (EXCEPTION_EXECUTE_HANDLER) {
         fprintf(
@@ -123,8 +114,9 @@ static DWORD WINAPI aim_thread_proc(LPVOID parameter) {
             "Error while executing aim proc; GetLastError = %d\n",
             GetLastError()
         );
-        kombot_resource_freeall();
-        ExitProcess(KOMBOT_FAIL);
+        //kombot_resource_freeall();
+        //ExitProcess(KOMBOT_FAIL);
+        return KOMBOT_FAIL;
     }
 }
 
@@ -162,7 +154,8 @@ void kombot_aim_init(void) {
     }
 
     state.aim_input.type = INPUT_MOUSE;
-    state.aim_input.mi.dwFlags = MOUSEEVENTF_MOVE;
+    state.aim_input.mi.dwFlags = MOUSEEVENTF_MOVE | MOUSEEVENTF_MOVE_NOCOALESCE;
+    //state.aim_input.mi.dwFlags = MOUSEEVENTF_MOVE | MOUSEEVENTF_ABSOLUTE;
 }
 
 void kombot_aim_start(void) {

@@ -3,9 +3,8 @@
 #include "Windows.h"
 #include "kombot_reftypes.h"
 
-#define KOMBOT_ACTIVATION_KEY '9'
-#define KOMBOT_ACTIVATION_MOUSE WM_LBUTTONDOWN
-#define KOMBOT_DEACTIVATION_MOUSE WM_LBUTTONUP
+#define KOMBOT_ACTIVATION_KEY_REGULAR '9'
+#define KOMBOT_ACTIVATION_KEY_SYSTEM VK_LMENU
 
 void kombot_input_init(void);
 
