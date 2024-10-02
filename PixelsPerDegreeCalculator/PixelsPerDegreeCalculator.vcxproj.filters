@@ -14,33 +14,12 @@
     <ClInclude Include="pch.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="kombot_reftypes.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="kombot_aim.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="kombot_input.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="kombot_error.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="pch.c">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="kombot.c">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="kombot_aim.c">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="kombot_input.c">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="kombot_error.c">
+    <ClCompile Include="main.c">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
