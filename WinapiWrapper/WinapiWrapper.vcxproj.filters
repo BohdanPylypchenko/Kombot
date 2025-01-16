@@ -1,0 +1,55 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <ClCompile Include="winapi.ixx" />
+    <ClCompile Include="winapi-minwindef.ixx">
+      <Filter>winapi-minwindef</Filter>
+    </ClCompile>
+    <ClCompile Include="pch.cpp">
+      <Filter>PCH</Filter>
+    </ClCompile>
+    <ClCompile Include="winapi-winuser.ixx">
+      <Filter>winapi-winuser</Filter>
+    </ClCompile>
+    <ClCompile Include="winapi-winuser-key.ixx">
+      <Filter>winapi-winuser</Filter>
+    </ClCompile>
+    <ClCompile Include="winapi-winuser-mouse.ixx">
+      <Filter>winapi-winuser</Filter>
+    </ClCompile>
+    <ClCompile Include="winapi-winuser-msg.ixx">
+      <Filter>winapi-winuser</Filter>
+    </ClCompile>
+    <ClCompile Include="winapi-consoleapi.ixx">
+      <Filter>winapi-consoleapi</Filter>
+    </ClCompile>
+    <ClCompile Include="winapi-winuser-input.ixx">
+      <Filter>winapi-winuser</Filter>
+    </ClCompile>
+    <ClCompile Include="winapi-display.ixx">
+      <Filter>winapi-display</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <Filter Include="winapi-minwindef">
+      <UniqueIdentifier>{44943de9-90b8-4aca-88de-a38e32116f17}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="PCH">
+      <UniqueIdentifier>{cf9dd13a-50f0-4bf2-befa-29d41064609a}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="winapi-winuser">
+      <UniqueIdentifier>{0c2f50f2-67fa-4bbc-832d-20af03ec068a}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="winapi-consoleapi">
+      <UniqueIdentifier>{ebc6220a-6d57-4587-b955-6e29d4e80c0c}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="winapi-display">
+      <UniqueIdentifier>{0bad63a2-bbdb-40da-ba94-d344ba164885}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="pch.h">
+      <Filter>PCH</Filter>
+    </ClInclude>
+  </ItemGroup>
+</Project>

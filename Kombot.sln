@@ -3,34 +3,54 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 17
 VisualStudioVersion = 17.9.34728.123
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "Kombot", "Aimer\Kombot.vcxproj", "{31696A38-1EF7-451B-92D4-172A45A9BB48}"
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "kombot-lib", "kombot-lib\kombot-lib.vcxproj", "{C7F289E5-1020-41F3-9EC5-D0B6A82AB56C}"
 EndProject
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "PixelsPerDegreeCalculator", "PixelsPerDegreeCalculator\PixelsPerDegreeCalculator.vcxproj", "{2222D2BF-4DB1-435F-AA1F-4EC66FA94F4F}"
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "WinapiWrapper", "WinapiWrapper\WinapiWrapper.vcxproj", "{48C2D5CB-6579-49F3-9747-47E3D44F849D}"
+EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "KombotPlayground", "KombotPlayground\KombotPlayground.vcxproj", "{C4F37A81-8F5A-42AB-947E-362F11282070}"
+EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "PixelsPerDegreeCalculator", "PixelsPerDegreeCalculator\PixelsPerDegreeCalculator.vcxproj", "{7002CA98-72E4-41A3-B95F-82D5C7FA28E2}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|x64 = Debug|x64
-		Debug|x86 = Debug|x86
+		r-avx2|x64 = r-avx2|x64
+		r-avx512|x64 = r-avx512|x64
 		Release|x64 = Release|x64
-		Release|x86 = Release|x86
 	EndGlobalSection
 	GlobalSection(ProjectConfigurationPlatforms) = postSolution
-		{31696A38-1EF7-451B-92D4-172A45A9BB48}.Debug|x64.ActiveCfg = Debug|x64
-		{31696A38-1EF7-451B-92D4-172A45A9BB48}.Debug|x64.Build.0 = Debug|x64
-		{31696A38-1EF7-451B-92D4-172A45A9BB48}.Debug|x86.ActiveCfg = Debug|Win32
-		{31696A38-1EF7-451B-92D4-172A45A9BB48}.Debug|x86.Build.0 = Debug|Win32
-		{31696A38-1EF7-451B-92D4-172A45A9BB48}.Release|x64.ActiveCfg = Release|x64
-		{31696A38-1EF7-451B-92D4-172A45A9BB48}.Release|x64.Build.0 = Release|x64
-		{31696A38-1EF7-451B-92D4-172A45A9BB48}.Release|x86.ActiveCfg = Release|Win32
-		{31696A38-1EF7-451B-92D4-172A45A9BB48}.Release|x86.Build.0 = Release|Win32
-		{2222D2BF-4DB1-435F-AA1F-4EC66FA94F4F}.Debug|x64.ActiveCfg = Debug|x64
-		{2222D2BF-4DB1-435F-AA1F-4EC66FA94F4F}.Debug|x64.Build.0 = Debug|x64
-		{2222D2BF-4DB1-435F-AA1F-4EC66FA94F4F}.Debug|x86.ActiveCfg = Debug|Win32
-		{2222D2BF-4DB1-435F-AA1F-4EC66FA94F4F}.Debug|x86.Build.0 = Debug|Win32
-		{2222D2BF-4DB1-435F-AA1F-4EC66FA94F4F}.Release|x64.ActiveCfg = Release|x64
-		{2222D2BF-4DB1-435F-AA1F-4EC66FA94F4F}.Release|x64.Build.0 = Release|x64
-		{2222D2BF-4DB1-435F-AA1F-4EC66FA94F4F}.Release|x86.ActiveCfg = Release|Win32
-		{2222D2BF-4DB1-435F-AA1F-4EC66FA94F4F}.Release|x86.Build.0 = Release|Win32
+		{C7F289E5-1020-41F3-9EC5-D0B6A82AB56C}.Debug|x64.ActiveCfg = Debug|x64
+		{C7F289E5-1020-41F3-9EC5-D0B6A82AB56C}.Debug|x64.Build.0 = Debug|x64
+		{C7F289E5-1020-41F3-9EC5-D0B6A82AB56C}.r-avx2|x64.ActiveCfg = r-avx2|x64
+		{C7F289E5-1020-41F3-9EC5-D0B6A82AB56C}.r-avx2|x64.Build.0 = r-avx2|x64
+		{C7F289E5-1020-41F3-9EC5-D0B6A82AB56C}.r-avx512|x64.ActiveCfg = r-avx512|x64
+		{C7F289E5-1020-41F3-9EC5-D0B6A82AB56C}.r-avx512|x64.Build.0 = r-avx512|x64
+		{C7F289E5-1020-41F3-9EC5-D0B6A82AB56C}.Release|x64.ActiveCfg = Release|x64
+		{C7F289E5-1020-41F3-9EC5-D0B6A82AB56C}.Release|x64.Build.0 = Release|x64
+		{48C2D5CB-6579-49F3-9747-47E3D44F849D}.Debug|x64.ActiveCfg = Debug|x64
+		{48C2D5CB-6579-49F3-9747-47E3D44F849D}.Debug|x64.Build.0 = Debug|x64
+		{48C2D5CB-6579-49F3-9747-47E3D44F849D}.r-avx2|x64.ActiveCfg = r-avx2|x64
+		{48C2D5CB-6579-49F3-9747-47E3D44F849D}.r-avx2|x64.Build.0 = r-avx2|x64
+		{48C2D5CB-6579-49F3-9747-47E3D44F849D}.r-avx512|x64.ActiveCfg = r-avx512|x64
+		{48C2D5CB-6579-49F3-9747-47E3D44F849D}.r-avx512|x64.Build.0 = r-avx512|x64
+		{48C2D5CB-6579-49F3-9747-47E3D44F849D}.Release|x64.ActiveCfg = Release|x64
+		{48C2D5CB-6579-49F3-9747-47E3D44F849D}.Release|x64.Build.0 = Release|x64
+		{C4F37A81-8F5A-42AB-947E-362F11282070}.Debug|x64.ActiveCfg = Debug|x64
+		{C4F37A81-8F5A-42AB-947E-362F11282070}.Debug|x64.Build.0 = Debug|x64
+		{C4F37A81-8F5A-42AB-947E-362F11282070}.r-avx2|x64.ActiveCfg = r-avx2|x64
+		{C4F37A81-8F5A-42AB-947E-362F11282070}.r-avx2|x64.Build.0 = r-avx2|x64
+		{C4F37A81-8F5A-42AB-947E-362F11282070}.r-avx512|x64.ActiveCfg = r-avx512|x64
+		{C4F37A81-8F5A-42AB-947E-362F11282070}.r-avx512|x64.Build.0 = r-avx512|x64
+		{C4F37A81-8F5A-42AB-947E-362F11282070}.Release|x64.ActiveCfg = Release|x64
+		{C4F37A81-8F5A-42AB-947E-362F11282070}.Release|x64.Build.0 = Release|x64
+		{7002CA98-72E4-41A3-B95F-82D5C7FA28E2}.Debug|x64.ActiveCfg = Debug|x64
+		{7002CA98-72E4-41A3-B95F-82D5C7FA28E2}.Debug|x64.Build.0 = Debug|x64
+		{7002CA98-72E4-41A3-B95F-82D5C7FA28E2}.r-avx2|x64.ActiveCfg = r-avx2|x64
+		{7002CA98-72E4-41A3-B95F-82D5C7FA28E2}.r-avx2|x64.Build.0 = r-avx2|x64
+		{7002CA98-72E4-41A3-B95F-82D5C7FA28E2}.r-avx512|x64.ActiveCfg = r-avx512|x64
+		{7002CA98-72E4-41A3-B95F-82D5C7FA28E2}.r-avx512|x64.Build.0 = r-avx512|x64
+		{7002CA98-72E4-41A3-B95F-82D5C7FA28E2}.Release|x64.ActiveCfg = Release|x64
+		{7002CA98-72E4-41A3-B95F-82D5C7FA28E2}.Release|x64.Build.0 = Release|x64
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
