@@ -30,6 +30,7 @@ using std::unordered_map;
 using std::any;
 using std::atomic_flag;
 using std::shared_ptr, std::make_shared;
+using std::println;
 
 namespace Kombot
 {
@@ -103,10 +104,13 @@ namespace Kombot
         resource.aimer = new Aimer(
             *resource.screen, *resource.state, config.aim_config
         );
+
+        println("Initialized kombot");
     }
 
     export void start()
     {
+        println("Starting kombot");
         resource.aimer->run();
         start_message_loop();
     }
@@ -119,5 +123,6 @@ namespace Kombot
         delete resource.decider;
         delete resource.state;
         delete resource.input_listener;
+        println("Cleaned kombot");
     }
 }

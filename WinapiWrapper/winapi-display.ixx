@@ -66,11 +66,6 @@ export namespace Winapi::Display
         Byte blue;
         Byte green;
         Byte red;
-
-        bool operator==(const BgrPixel& other)
-        {
-            return blue == other.blue && green == other.green && red == other.red;
-        }
     };
 
     inline Hdc get_dc(Hwnd hwnd)

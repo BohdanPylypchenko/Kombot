@@ -10,7 +10,7 @@ using Winapi::Minwindef::WParam;
 using Winapi::Minwindef::LParam;
 
 import std;
-using std::println, std::format;
+using std::format;
 using std::error_code, std::system_error, std::system_category;
 
 export namespace Winapi::WinUser::Msg
@@ -63,11 +63,7 @@ export namespace Winapi::WinUser::Msg
             hook(SetWindowsHookEx(static_cast<int>(type), hook_proc, NULL, 0)),
             type(type)
         {
-            if (hook)
-            {
-                println("Created hook of type {}", static_cast<int>(type));
-            }
-            else
+            if (!hook)
             {
                 throw system_error(
                     error_code(GetLastError(), std::system_category()),
@@ -96,9 +92,7 @@ export namespace Winapi::WinUser::Msg
 
         ~Hook()
         {
-            if (hook)
-                UnhookWindowsHookEx(hook);
-            println("Called destructor of hook with type {}", static_cast<int>(type));
+            if (hook) UnhookWindowsHookEx(hook);
         }
     };
 }
