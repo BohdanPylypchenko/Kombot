@@ -27,11 +27,13 @@ import std;
 using std::unique_ptr;
 using std::string;
 using std::ofstream;
+using std::span;
 using std::mdspan, std::dextents;
 
 export namespace Kombot::Frameshot
 {
-    using FrameView = mdspan<BgrPixel, dextents<size_t, 2>>;
+    using SdFrameView = span<BgrPixel>;
+    using MdFrameView = mdspan<BgrPixel, dextents<size_t, 2>>;
 
     struct HdcScreen
     {
@@ -126,14 +128,18 @@ export namespace Kombot::Frameshot
         FrameShooter(FrameShooter&& other) = default;
         FrameShooter& operator=(FrameShooter&& other) = default;
 
-        inline char* get_buffer() const noexcept
+        inline SdFrameView get_sd_frame_view() const noexcept
         {
-            return bitmap_data.get();
+            return SdFrameView
+            {
+                reinterpret_cast<BgrPixel*>(bitmap_data.get()),
+                static_cast<size_t>(frame_width * frame_height)
+            };
         }
 
-        inline FrameView get_frameview() const noexcept
+        inline MdFrameView get_md_frame_view() const noexcept
         {
-            return FrameView
+            return MdFrameView
             {
                 reinterpret_cast<BgrPixel*>(bitmap_data.get()),
                 frame_width, frame_height
