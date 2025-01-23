@@ -14,6 +14,12 @@ using Kombot::Decide::Decision;
 export import :frameshot;
 using Kombot::Frameshot::HdcScreen;
 
+export import :loop_on_thread;
+
+export import :shoot;
+using Kombot::Shoot::Shooter;
+using Kombot::Shoot::ShootMode;
+
 export import :aim;
 using Kombot::Aim::Aimer;
 using Kombot::Aim::AimConfig;
@@ -30,6 +36,7 @@ using std::unordered_map;
 using std::any;
 using std::atomic_flag;
 using std::shared_ptr, std::make_shared;
+using std::unordered_set;
 using std::println;
 
 namespace Kombot
@@ -40,15 +47,20 @@ namespace Kombot
         Decider* decider;
         InputListener* input_listener;
         HdcScreen* screen;
+        Shooter* shooter;
         Aimer* aimer;
     };
 
     static Resource resource { };
 
+    export using KeycodeSet = unordered_set<Dword>;
     export struct Config
     {
         Dword aim_keycode;
         AimConfig aim_config;
+        KeycodeSet keycodes_no;
+        KeycodeSet keycodes_always;
+        KeycodeSet keycodes_on_target;
     };
 
     export void initialize(const Config& config)
@@ -64,7 +76,7 @@ namespace Kombot
 
         resource.decider = new Decider
         {
-            *(resource.state),
+            *resource.state,
             {
                 Decision<KeyEvent>(
                     [&config](const State& state, const KeyEvent& event)
@@ -87,7 +99,43 @@ namespace Kombot
                     {
                         state.get<shared_ptr<atomic_flag>>(State::IsKeyTrigger).get()->clear();
                     }
-                )
+                ),
+                Decision<KeyEvent>(
+                    [&config](const State& state, const KeyEvent& event)
+                    {
+                        return event.type == KeyEventType::Down &&
+                               config.keycodes_no.contains(event.info->vkCode);
+                    },
+                    [](State& state, const KeyEvent& event)
+                    {
+                        resource.shooter->set_mode(ShootMode::No);
+                        println("shoot mode = no");
+                    }
+                ),
+                Decision<KeyEvent>(
+                    [&config](const State& state, const KeyEvent& event)
+                    {
+                        return event.type == KeyEventType::Down &&
+                               config.keycodes_always.contains(event.info->vkCode);
+                    },
+                    [](State& state, const KeyEvent& event)
+                    {
+                        resource.shooter->set_mode(ShootMode::Always);
+                        println("shoot mode = always");
+                    }
+                ),
+                Decision<KeyEvent>(
+                    [&config](const State& state, const KeyEvent& event)
+                    {
+                        return event.type == KeyEventType::Down &&
+                               config.keycodes_on_target.contains(event.info->vkCode);
+                    },
+                    [](State& state, const KeyEvent& event)
+                    {
+                        resource.shooter->set_mode(ShootMode::OnTarget);
+                        println("shoot mode = on target");
+                    }
+                ),
             },
             { }
         };
@@ -101,8 +149,10 @@ namespace Kombot
 
         resource.screen = new HdcScreen();
 
+        resource.shooter = new Shooter(*resource.state);
+
         resource.aimer = new Aimer(
-            *resource.screen, *resource.state, config.aim_config
+            *resource.screen, *resource.state, *resource.shooter, config.aim_config
         );
 
         println("Initialized kombot");
@@ -111,14 +161,13 @@ namespace Kombot
     export void start()
     {
         println("Starting kombot");
-        resource.aimer->run();
         start_message_loop();
     }
 
     export void cleanup()
     {
-        resource.aimer->notify_on_kombot_end();
         delete resource.aimer;
+        delete resource.shooter;
         delete resource.screen;
         delete resource.decider;
         delete resource.state;
