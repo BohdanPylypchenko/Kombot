@@ -4,20 +4,27 @@ import winapi;
 using Winapi::Minwindef::Byte;
 using Winapi::Minwindef::Dword;
 using Winapi::WinUser::Input::Input;
-using Winapi::WinUser::Input::InputMouseType;
-using Winapi::WinUser::Input::MouseEventMove;
+using Winapi::WinUser::Input::InputType;
+using Winapi::WinUser::Input::MouseEventFlag;
 using Winapi::WinUser::Input::send_input;
 using Winapi::Display::BgrPixel;
 using Winapi::Display::get_device_caps;
 using Winapi::Display::DeviceCap;
 
+import :loop_on_thread;
+using Kombot::LoopOnThread::LoopOnThread;
+
 import :common;
 using Kombot::Common::State;
+using Kombot::Common::StateUser;
 
 import :frameshot;
 using Kombot::Frameshot::HdcScreen;
 using Kombot::Frameshot::MdFrameView;
 using Kombot::Frameshot::FrameShooter;
+
+import :shoot;
+using Kombot::Shoot::Shooter;
 
 import std;
 using std::atomic_flag;
@@ -48,9 +55,11 @@ export namespace Kombot::Aim
         int mouse_y_ppd;
         int horizontal_fov;
         double barrier_coefficient;
+        double small_x_coefficient;
+        double small_y_coefficient;
     };
 
-    class Aimer
+    class Aimer : public LoopOnThread, public StateUser
     {
     private:
 
@@ -128,9 +137,10 @@ export namespace Kombot::Aim
             int half_frame_wh;
 
             bool is_previous_move_big;
-            int small_move_counter;
-            double x_coefficient;
-            double y_coefficient;
+            double big_x_coefficient;
+            double big_y_coefficient;
+            double small_x_coefficient;
+            double small_y_coefficient;
             double barrier2;
 
         public:
@@ -146,11 +156,14 @@ export namespace Kombot::Aim
                 int screen_height_relation,
                 int mouse_x_ppd,
                 int mouse_y_ppd,
-                double barrier_coefficient
+                double barrier_coefficient,
+                double small_x_coefficient,
+                double small_y_coefficient
             ):
                 half_frame_wh(half_frame_wh),
                 is_previous_move_big(false),
-                small_move_counter(0)
+                small_x_coefficient(small_x_coefficient),
+                small_y_coefficient(small_y_coefficient)
             {
                 double screen_pixels_per_degree =
                     (double)(screen_resolution_w) /
@@ -169,17 +182,17 @@ export namespace Kombot::Aim
                     };
                 }
 
-                x_coefficient = (double)mouse_x_ppd / screen_pixels_per_degree;
-                y_coefficient = (double)mouse_y_ppd / screen_pixels_per_degree;
+                big_x_coefficient = (double)mouse_x_ppd / screen_pixels_per_degree;
+                big_y_coefficient = (double)mouse_y_ppd / screen_pixels_per_degree;
 
-                barrier2 = sqrt(barrier_coefficient * (pow(x_coefficient, 2) + pow(y_coefficient, 2)));
+                barrier2 = barrier_coefficient * sqrt(pow(big_x_coefficient, 2) + pow(big_y_coefficient, 2));
             }
 
             AimVectorCalculator(const AimVectorCalculator& other) = delete;
             AimVectorCalculator& operator=(const AimVectorCalculator& other) = delete;
 
-            AimVectorCalculator(AimVectorCalculator&& other) = delete;
-            AimVectorCalculator& operator=(AimVectorCalculator&& other) = delete;
+            AimVectorCalculator(AimVectorCalculator&& other) = default;
+            AimVectorCalculator& operator=(AimVectorCalculator&& other) = default;
 
             inline Point convert_to_aim_vector_simple(const Point& target_point)
             {
@@ -192,45 +205,27 @@ export namespace Kombot::Aim
 
             inline Point convert_to_aim_vector_scale(const Point& target_point)
             {
-                small_move_counter++;
-
                 Point result = convert_to_aim_vector_simple(target_point);
 
                 if (result.m2() > barrier2 &&
                     !is_previous_move_big)
                 {
-                    result.x *= x_coefficient;
-                    result.y *= y_coefficient;
-
+                    result.x *= big_x_coefficient;
+                    result.y *= big_y_coefficient;
                     is_previous_move_big = true;
-                    zero_small_move_counter();
                 }
                 else
                 {
-                    result.x *= small_coefficient();
-                    result.y *= small_coefficient();
+                    result.x *= small_x_coefficient;
+                    result.y *= small_y_coefficient;
                     is_previous_move_big = false;
                 }
 
                 return result;
             }
-
-            inline void zero_small_move_counter() noexcept
-            {
-                small_move_counter = 0;
-            }
-
-            inline double small_coefficient() noexcept
-            {
-                //double result = small_move_counter * small_move_counter;
-                //return result > 25 ? 25 : result;
-                return 25;
-            }
         };
 
-        atomic_flag is_kombot_running;
-        atomic_flag is_aiming;
-        State& state;
+        Shooter& shooter;
 
         int screen_resolution_w;
         int screen_resolution_h;
@@ -246,16 +241,19 @@ export namespace Kombot::Aim
 
         FrameShooter frame_shooter;
 
+#ifdef KOMBOT_PERFORMANCE
+        size_t total_frame_count;
+#endif
+
 #ifdef KOMBOT_SAVE_FRAME
         size_t frame_count;
 #endif
 
     public:
 
-        Aimer(HdcScreen& screen, State& state, AimConfig config):
-            is_kombot_running(),
-            is_aiming(),
-            state(state),
+        Aimer(HdcScreen& screen, State& state, Shooter& shooter, AimConfig config):
+            StateUser(state),
+            shooter(shooter),
             screen_resolution_w(get_device_caps(screen.get(), DeviceCap::HorizontalResolution)),
             screen_resolution_h(get_device_caps(screen.get(), DeviceCap::VecticalResolution)),
             half_frame_wh(config.frame_half_wh_px),
@@ -270,7 +268,9 @@ export namespace Kombot::Aim
                 config.screen_height_relation,
                 config.mouse_x_ppd,
                 config.mouse_y_ppd,
-                config.barrier_coefficient
+                config.barrier_coefficient,
+                config.small_x_coefficient,
+                config.small_y_coefficient
             },
             target_color(config.target_color),
             max_target_color_difference(config.max_target_color_difference),
@@ -285,9 +285,6 @@ export namespace Kombot::Aim
                 frame_wh
             }
         {
-            is_kombot_running.test_and_set();
-            is_aiming.test_and_set();
-
             target.reserve(frame_wh * frame_wh);
 
 #ifdef KOMBOT_SAVE_FRAME
@@ -301,39 +298,30 @@ export namespace Kombot::Aim
         Aimer(Aimer&& other) = default;
         Aimer& operator=(Aimer&& other) = default;
 
-        void run()
+    protected:
+
+        bool iteration_condition() override
         {
-            thread t
-            {
-                [this]()
-                {
-                    while (is_kombot_running.test())
-                    {
-                        if (check_key_trigger() || check_mouse_trigger())
-                        {
-#ifdef KOMBOT_PERFORMANCE
-                            auto start = std::chrono::high_resolution_clock::now();
-#endif
-                            target.clear();
-                            aim_iteration();
-#ifdef KOMBOT_PERFORMANCE
-                            auto end = std::chrono::high_resolution_clock::now();
-                            auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(end - start).count();
-                            auto count_per_second = 1000.0 / static_cast<double>(duration);
-                            println("frame per second = {}", count_per_second);
-#endif
-                        }
-                    }
-                    is_aiming.clear();
-                }
-            };
-            t.detach();
+            return check_key_trigger() || check_mouse_trigger();
         }
 
-        inline void notify_on_kombot_end()
+        void execute_iteration() override
         {
-            is_kombot_running.clear();
-            for (auto i = 0; is_aiming.test(); i++);
+#ifdef KOMBOT_PERFORMANCE
+            auto start = std::chrono::high_resolution_clock::now();
+#endif
+            target.clear();
+            aim_iteration();
+#ifdef KOMBOT_PERFORMANCE
+            auto end = std::chrono::high_resolution_clock::now();
+            auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(end - start).count();
+            if (total_frame_count % 100 == 0)
+            {
+                auto count_per_second = 1000.0 / static_cast<double>(duration);
+                println("frame per second = {}", count_per_second);
+            }
+            total_frame_count++;
+#endif
         }
 
     private:
@@ -359,7 +347,10 @@ export namespace Kombot::Aim
 #endif
 
             if (target.empty())
+            {
+                shooter.notify_off_target();
                 return;
+            }
 
             Point current_target_average = target_average();
             if (previous_target_average == current_target_average)
@@ -368,11 +359,11 @@ export namespace Kombot::Aim
             Rectangle bound = Rectangle::as_bound_of_points(target);
             if (bound.is_point_in_rectangle(Point(half_frame_wh, half_frame_wh)))
             {
-                avc.zero_small_move_counter();
-                //aim_with_vector(avc.convert_to_aim_vector_simple(current_target_average));
+                shooter.notify_on_target();
             }
             else
             {
+                shooter.notify_off_target();
                 aim_with_vector(avc.convert_to_aim_vector_scale(current_target_average));
             }
 
@@ -445,24 +436,14 @@ export namespace Kombot::Aim
         static inline void aim_with_vector(const Point& point)
         {
             Input input { };
-            input.type = InputMouseType;
-            input.mi.dwFlags = MouseEventMove;
+            input.type = static_cast<Dword>(InputType::Mouse);
+            input.mi.dwFlags = MouseEventFlag::Move;
             input.mi.dx = static_cast<int>(point.x);
             input.mi.dy = static_cast<int>(point.y);
             send_input(1, &input);
 #ifdef KOMBOT_LOG
             println("send input: x = {}, y = {}", input.mi.dx, input.mi.dy);
 #endif
-        }
-
-        inline bool check_key_trigger() const
-        {
-            return state.get<shared_ptr<atomic_flag>>(State::IsKeyTrigger).get()->test();
-        }
-
-        inline bool check_mouse_trigger() const
-        {
-            return state.get<shared_ptr<atomic_flag>>(State::IsMouseTrigger).get()->test();
         }
 
 #ifdef KOMBOT_SAVE_FRAME

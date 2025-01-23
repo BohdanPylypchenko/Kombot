@@ -11,9 +11,14 @@ using std::any_cast;
 using std::string;
 using std::function;
 using std::string;
+using std::shared_ptr;
+using std::atomic_flag;
 
 export namespace Kombot::Common
 {
+    using KeyEventHandler = function<void(const KeyEvent&)>;
+    using MouseEventHandler = function<void(const MouseEvent&)>;
+
     struct State
     {
     private:
@@ -48,6 +53,34 @@ export namespace Kombot::Common
     string State::IsKeyTrigger = "is_key_trigger";
     string State::IsMouseTrigger = "is_mouse_trigger";
 
-    using KeyEventHandler = function<void(const KeyEvent&)>;
-    using MouseEventHandler = function<void(const MouseEvent&)>;
+    class StateUser
+    {
+    protected:
+
+        State& state;
+
+    public:
+
+        StateUser(State& state):
+            state(state)
+        { }
+
+        StateUser(const StateUser& other) = default;
+        StateUser& operator=(const StateUser& other) = default;
+
+        StateUser(StateUser&& other) = default;
+        StateUser& operator=(StateUser&& other) = default;
+
+    protected:
+
+        inline bool check_key_trigger() const
+        {
+            return state.get<shared_ptr<atomic_flag>>(State::IsKeyTrigger).get()->test();
+        }
+
+        inline bool check_mouse_trigger() const
+        {
+            return state.get<shared_ptr<atomic_flag>>(State::IsMouseTrigger).get()->test();
+        }
+    };
 }

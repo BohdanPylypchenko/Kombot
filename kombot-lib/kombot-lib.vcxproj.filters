@@ -7,5 +7,7 @@
     <ClCompile Include="kombot-common.ixx" />
     <ClCompile Include="kombot-aim.ixx" />
     <ClCompile Include="kombot-frameshot.ixx" />
+    <ClCompile Include="kombot-shoot.ixx" />
+    <ClCompile Include="kombot-loop-on-thread.ixx" />
   </ItemGroup>
 </Project>
