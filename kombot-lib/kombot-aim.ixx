@@ -302,7 +302,7 @@ export namespace Kombot::Aim
 
         bool iteration_condition() override
         {
-            return check_key_trigger() || check_mouse_trigger();
+            return check_mouse_trigger() && check_on_off_trigger();
         }
 
         void execute_iteration() override

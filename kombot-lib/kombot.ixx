@@ -51,12 +51,12 @@ namespace Kombot
 
         enum class MouseTriggerType
         {
-            No, Left, Right
+            Left, Right
         };
 
         struct Config
         {
-            Dword aim_keycode;
+            Dword on_off_keycode;
             AimConfig aim_config;
             KeycodeSet keycodes_no;
             KeycodeSet keycodes_always;
@@ -113,83 +113,77 @@ namespace Kombot
         {
             unordered_map<string, any>
             {
-                { State::IsKeyTrigger, make_shared<atomic_flag>() },
+                { State::OnOffTrigger, make_shared<atomic_flag>() },
                 { State::IsMouseTrigger, make_shared<atomic_flag>() }
             }
         };
 
-        vector<Decision<KeyEvent>> key_decisions =
-        {
-            Decision<KeyEvent>(
-                [&config](const State& state, const KeyEvent& event)
-                {
-                    return event.type == KeyEventType::Down &&
-                           event.info->vkCode == config.aim_keycode;
-                },
-                [](State& state, const KeyEvent& event)
-                {
-                    state.get<shared_ptr<atomic_flag>>(State::IsKeyTrigger).get()->test_and_set();
-                }
-            ),
-            Decision<KeyEvent>(
-                [&config](const State& state, const KeyEvent& event)
-                {
-                    return event.type == KeyEventType::Up &&
-                           event.info->vkCode == config.aim_keycode;
-                },
-                [](State& state, const KeyEvent& event)
-                {
-                    state.get<shared_ptr<atomic_flag>>(State::IsKeyTrigger).get()->clear();
-                }
-            ),
-            Decision<KeyEvent>(
-                [&config](const State& state, const KeyEvent& event)
-                {
-                    return event.type == KeyEventType::Down &&
-                           config.keycodes_no.contains(event.info->vkCode);
-                },
-                [](State& state, const KeyEvent& event)
-                {
-                    resource.shooter->set_mode(ShootMode::No);
-                    println("shoot mode = no");
-                }
-            ),
-            Decision<KeyEvent>(
-                [&config](const State& state, const KeyEvent& event)
-                {
-                    return event.type == KeyEventType::Down &&
-                           config.keycodes_always.contains(event.info->vkCode);
-                },
-                [](State& state, const KeyEvent& event)
-                {
-                    resource.shooter->set_mode(ShootMode::Always);
-                    println("shoot mode = always");
-                }
-            ),
-            Decision<KeyEvent>(
-                [&config](const State& state, const KeyEvent& event)
-                {
-                    return event.type == KeyEventType::Down &&
-                           config.keycodes_on_target.contains(event.info->vkCode);
-                },
-                [](State& state, const KeyEvent& event)
-                {
-                    resource.shooter->set_mode(ShootMode::OnTarget);
-                    println("shoot mode = on target");
-                }
-            ),
-        };
+        MouseEventTypePair mouse_event_type_pair =
+            MouseEventTypePair::of_mouse_trigger_type(config.mouse_trigger_type);
 
-        vector<Decision<MouseEvent>> mouse_decisions;
-        if (config.mouse_trigger_type == MouseTriggerType::No)
+        resource.decider = new Decider
         {
-            mouse_decisions = { };
-        }
-        else
-        {
-            MouseEventTypePair mouse_event_type_pair =
-                MouseEventTypePair::of_mouse_trigger_type(config.mouse_trigger_type);
-            mouse_decisions =
+            *resource.state,
+            {
+                Decision<KeyEvent>(
+                    [&config](const State& state, const KeyEvent& event)
+                    {
+                        return event.type == KeyEventType::Up &&
+                               event.info->vkCode == config.on_off_keycode;
+                    },
+                    [](State& state, const KeyEvent& event)
+                    {
+                        atomic_flag* on_off =
+                            state.get<shared_ptr<atomic_flag>>(State::OnOffTrigger).get();
+                        if (on_off->test())
+                        {
+                            on_off->clear();
+                            println("kombot is off");
+                        }
+                        else
+                        {
+                            on_off->test_and_set();
+                            println("kombot is on");
+                        }
+                    }
+                ),
+                Decision<KeyEvent>(
+                    [&config](const State& state, const KeyEvent& event)
+                    {
+                        return event.type == KeyEventType::Down &&
+                               config.keycodes_no.contains(event.info->vkCode);
+                    },
+                    [](State& state, const KeyEvent& event)
+                    {
+                        resource.shooter->set_mode(ShootMode::No);
+                        println("shoot mode = no");
+                    }
+                ),
+                Decision<KeyEvent>(
+                    [&config](const State& state, const KeyEvent& event)
+                    {
+                        return event.type == KeyEventType::Down &&
+                               config.keycodes_always.contains(event.info->vkCode);
+                    },
+                    [](State& state, const KeyEvent& event)
+                    {
+                        resource.shooter->set_mode(ShootMode::Always);
+                        println("shoot mode = always");
+                    }
+                ),
+                Decision<KeyEvent>(
+                    [&config](const State& state, const KeyEvent& event)
+                    {
+                        return event.type == KeyEventType::Down &&
+                               config.keycodes_on_target.contains(event.info->vkCode);
+                    },
+                    [](State& state, const KeyEvent& event)
+                    {
+                        resource.shooter->set_mode(ShootMode::OnTarget);
+                        println("shoot mode = on target");
+                    }
+                ),
+            },
             {
                 Decision<MouseEvent>(
                     [mouse_event_type_pair](const State& state, const MouseEvent& event)
@@ -199,11 +193,6 @@ namespace Kombot
                     [](State& state, const MouseEvent& event)
                     {
                         state.get<shared_ptr<atomic_flag>>(State::IsMouseTrigger).get()->test_and_set();
-                        println(
-                            "mouse trigger = {}, key trigger = {}",
-                            state.get<shared_ptr<atomic_flag>>(State::IsMouseTrigger).get()->test(),
-                            state.get<shared_ptr<atomic_flag>>(State::IsKeyTrigger).get()->test()
-                        );
                     }
                 ),
                 Decision<MouseEvent> (
@@ -214,27 +203,14 @@ namespace Kombot
                     [](State& state, const MouseEvent& event)
                     {
                         state.get<shared_ptr<atomic_flag>>(State::IsMouseTrigger).get()->clear();
-                        println(
-                            "mouse trigger = {}, key trigger = {}",
-                            state.get<shared_ptr<atomic_flag>>(State::IsMouseTrigger).get()->test(),
-                            state.get<shared_ptr<atomic_flag>>(State::IsKeyTrigger).get()->test()
-                        );
                     }
                 )
-            };
-        }
-
-        resource.decider = new Decider
-        {
-            *resource.state,
-            key_decisions,
-            mouse_decisions
+            }
         };
 
         KVMSHook::initialize(
             resource.decider->get_key_event_handler(),
-            config.mouse_trigger_type == MouseTriggerType::No ?
-            nullptr : resource.decider->get_mouse_event_handler()
+            resource.decider->get_mouse_event_handler()
         );
 
         resource.input_listener = new InputListener();

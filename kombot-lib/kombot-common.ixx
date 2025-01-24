@@ -27,7 +27,7 @@ export namespace Kombot::Common
 
     public:
 
-        static string IsKeyTrigger;
+        static string OnOffTrigger;
         static string IsMouseTrigger;
 
         State():
@@ -50,7 +50,7 @@ export namespace Kombot::Common
             return any_cast<T&>(storage.at(name));
         }
     };
-    string State::IsKeyTrigger = "is_key_trigger";
+    string State::OnOffTrigger = "on_off_trigger";
     string State::IsMouseTrigger = "is_mouse_trigger";
 
     class StateUser
@@ -73,9 +73,9 @@ export namespace Kombot::Common
 
     protected:
 
-        inline bool check_key_trigger() const
+        inline bool check_on_off_trigger() const
         {
-            return state.get<shared_ptr<atomic_flag>>(State::IsKeyTrigger).get()->test();
+            return state.get<shared_ptr<atomic_flag>>(State::OnOffTrigger).get()->test();
         }
 
         inline bool check_mouse_trigger() const
