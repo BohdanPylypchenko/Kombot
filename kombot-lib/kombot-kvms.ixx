@@ -1,6 +1,7 @@
 export module kombot:kvms;
 
 import winapi;
+using Winapi::Minwindef::Dword;
 using Winapi::Minwindef::LResult;
 using Winapi::Minwindef::WParam;
 using Winapi::Minwindef::LParam;
@@ -68,7 +69,7 @@ export namespace Kombot::KVMS
                         .type = static_cast<MouseEventType>(wparam),
                         .info = reinterpret_cast<MouseInfo*>(lparam)
                     };
-                    mouse_event_handler(ms);
+                    if (!is_mouse_event_to_filter(ms)) mouse_event_handler(ms);
                 }
             }
             return call_next_hook_ex(code, wparam, lparam);
@@ -88,6 +89,15 @@ export namespace Kombot::KVMS
             return
                 static_cast<WParam>(MouseEventType::First) <= wparam &&
                 wparam <= static_cast<WParam>(MouseEventType::Last);
+        }
+
+        static inline bool is_mouse_event_to_filter(MouseEvent ms)
+        {
+            return
+                ms.info->flags == static_cast<Dword>(MouseEventType::Move) ||
+                ms.info->flags == static_cast<Dword>(MouseEventType::MiddleDown) ||
+                ms.info->flags == static_cast<Dword>(MouseEventType::MiddleUp) ||
+                ms.info->flags == static_cast<Dword>(MouseEventType::MiddleDouble);
         }
     };
     KeyEventHandler KVMSHook::key_event_handler = nullptr;

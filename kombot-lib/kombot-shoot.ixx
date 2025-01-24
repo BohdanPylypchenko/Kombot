@@ -33,17 +33,23 @@ export namespace Kombot::Shoot
         static const Dword start_shoot_flag = MouseEventFlag::MiddleDown;
         static const Dword stop_shoot_flag = MouseEventFlag::MiddleUp;
 
-        atomic<ShootMode> mode;
         bool is_active;
+
+        atomic<ShootMode> mode;
+        atomic_flag is_mode_changed;
+
         atomic_flag is_on_target;
+        atomic_flag is_on_target_changed;
 
     public:
 
         Shooter(State& state):
             StateUser(state),
-            mode(ShootMode::No),
             is_active(false),
-            is_on_target()
+            mode(ShootMode::No),
+            is_mode_changed(),
+            is_on_target(),
+            is_on_target_changed()
         { }
 
         Shooter(const Shooter& other) = delete;
@@ -54,17 +60,22 @@ export namespace Kombot::Shoot
 
         inline void set_mode(ShootMode mode)
         {
-            this->mode.store(mode);
+            if (this->mode.exchange(mode) != mode)
+                is_mode_changed.test_and_set();
+            else
+                is_mode_changed.clear();
         }
 
         inline void notify_on_target()
         {
             is_on_target.test_and_set();
+            is_on_target_changed.test_and_set();
         }
 
         inline void notify_off_target()
         {
             is_on_target.clear();
+            is_on_target_changed.test_and_set();
         }
 
     protected:
@@ -72,8 +83,17 @@ export namespace Kombot::Shoot
         bool iteration_condition() override
         {
             bool should_be_active = check_key_trigger() || check_mouse_trigger();
-            bool is_changed = is_active != should_be_active;
+
+            bool is_changed =
+                is_active != should_be_active ||
+                is_mode_changed.test() ||
+                is_on_target_changed.test();
+
             is_active = should_be_active;
+
+            is_mode_changed.clear();
+            is_on_target_changed.clear();
+
             return is_changed;
         }
 
@@ -99,6 +119,8 @@ export namespace Kombot::Shoot
             case ShootMode::OnTarget:
                 if (is_on_target.test())
                     send_mouse_input_with_flags(start_shoot_flag);
+                else
+                    send_mouse_input_with_flags(stop_shoot_flag);
                 break;
             default:
                 unreachable();

@@ -79,6 +79,16 @@ export namespace Kombot::Decide
             mouse_decisions(mouse_decisions)
         { }
 
+        Decider(
+            State& state,
+            vector<Decision<KeyEvent>>& key_decisions,
+            vector<Decision<MouseEvent>>& mouse_decisions
+        ):
+            state(state),
+            key_decisions(key_decisions),
+            mouse_decisions(mouse_decisions)
+        { }
+
         Decider(const Decider& other) = default;
         Decider& operator=(const Decider& other) = default;
 
