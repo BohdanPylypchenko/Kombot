@@ -315,7 +315,7 @@ I : inverse delta sign)";
             nullptr
         );
 
-        resource.input_listener = new InputListener(KVMSHook::get_hook_proc());
+        resource.input_listener = new InputListener(KVMSHook::key_hook_proc);
         resource.rotator = new Rotator(*(resource.state));
 
         Winapi::WinUser::Msg::start_message_loop();

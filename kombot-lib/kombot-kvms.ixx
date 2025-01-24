@@ -44,52 +44,35 @@ export namespace Kombot::KVMS
             KVMSHook::mouse_event_handler = mouse_event_handler;
         }
 
-        static inline HookProc get_hook_proc()
+        static LResult __stdcall key_hook_proc(int code, WParam wparam, LParam lparam)
         {
-            return hook_proc;
+            if (key_event_handler && code == ActionHookCode)
+            {
+                KeyEvent kv =
+                {
+                    .type = static_cast<KeyEventType>(wparam),
+                    .info = reinterpret_cast<KeyInfo*>(lparam)
+                };
+                key_event_handler(kv);
+            }
+            return call_next_hook_ex(code, wparam, lparam);
         }
 
-        static LResult __stdcall hook_proc(int code, WParam wparam, LParam lparam)
+        static LResult __stdcall mouse_hook_proc(int code, WParam wparam, LParam lparam)
         {
-            if (code == ActionHookCode)
+            if (mouse_event_handler && code == ActionHookCode)
             {
-                if (key_event_handler && is_key_event(wparam))
+                MouseEvent ms =
                 {
-                    KeyEvent kv =
-                    {
-                        .type = static_cast<KeyEventType>(wparam),
-                        .info = reinterpret_cast<KeyInfo*>(lparam)
-                    };
-                    key_event_handler(kv);
-                }
-                else if (mouse_event_handler && is_mouse_event(wparam))
-                {
-                    MouseEvent ms =
-                    {
-                        .type = static_cast<MouseEventType>(wparam),
-                        .info = reinterpret_cast<MouseInfo*>(lparam)
-                    };
-                    if (!is_mouse_event_to_filter(ms)) mouse_event_handler(ms);
-                }
+                    .type = static_cast<MouseEventType>(wparam),
+                    .info = reinterpret_cast<MouseInfo*>(lparam)
+                };
+                if (!is_mouse_event_to_filter(ms)) mouse_event_handler(ms);
             }
             return call_next_hook_ex(code, wparam, lparam);
         }
 
     private:
-
-        static inline bool is_key_event(WParam wparam)
-        {
-            return
-                static_cast<WParam>(KeyEventType::First) <= wparam &&
-                wparam <= static_cast<WParam>(KeyEventType::Last);
-        }
-
-        static inline bool is_mouse_event(WParam wparam)
-        {
-            return
-                static_cast<WParam>(MouseEventType::First) <= wparam &&
-                wparam <= static_cast<WParam>(MouseEventType::Last);
-        }
 
         static inline bool is_mouse_event_to_filter(MouseEvent ms)
         {
@@ -113,8 +96,8 @@ export namespace Kombot::KVMS
     public:
 
         InputListener():
-            key_hook(KVMSHook::get_hook_proc(), HookType::Keyboard),
-            mouse_hook(KVMSHook::get_hook_proc(), HookType::Mouse)
+            key_hook(KVMSHook::key_hook_proc, HookType::Keyboard),
+            mouse_hook(KVMSHook::mouse_hook_proc, HookType::Mouse)
         { }
 
         InputListener(HookProc kv_hook_proc):

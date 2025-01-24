@@ -63,14 +63,16 @@ namespace Playground
                 .frame_half_wh_px = 128,
                 .screen_width_relation = 16,
                 .screen_height_relation = 10,
-                .mouse_x_ppd = 1819,
-                .mouse_y_ppd = 1819,
+                //.mouse_x_ppd = 1819,
+                //.mouse_y_ppd = 1819,
+                .mouse_x_ppd = 1136,
+                .mouse_y_ppd = 1136,
                 .horizontal_fov = 128,
 
                 // 57-60
-                //.barrier_coefficient = 0.0,
-                //.small_x_coefficient = 1,
-                //.small_y_coefficient = 1
+                .barrier_coefficient = 0.0,
+                .small_x_coefficient = 1,
+                .small_y_coefficient = 1
 
                 // 60-63
                 //.barrier_coefficient = 0.05,
@@ -78,9 +80,9 @@ namespace Playground
                 //.small_y_coefficient = 1
                 
                 // 60-63
-                .barrier_coefficient = 0.1,
-                .small_x_coefficient = 50,
-                .small_y_coefficient = 50
+                //.barrier_coefficient = 0.1,
+                //.small_x_coefficient = 50,
+                //.small_y_coefficient = 50
             },
             .keycodes_no = KeycodeSet { 'Q', '3' },
             .keycodes_always = KeycodeSet { '1', '2', '4', 'E' },
