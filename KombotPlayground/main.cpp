@@ -9,8 +9,7 @@ using Winapi::Display::get_device_caps;
 using Winapi::Display::DeviceCap;
 
 import kombot;
-using Kombot::KeycodeSet;
-using Kombot::Config;
+using namespace Kombot::Konfig;
 using Kombot::initialize;
 using Kombot::start;
 using Kombot::cleanup;
@@ -84,8 +83,9 @@ namespace Playground
                 .small_y_coefficient = 50
             },
             .keycodes_no = KeycodeSet { 'Q', '3' },
-            .keycodes_always = KeycodeSet { 'E', '1', '2', '4' },
-            .keycodes_on_target = KeycodeSet { 'R' }
+            .keycodes_always = KeycodeSet { '1', '2', '4', 'E' },
+            .keycodes_on_target = KeycodeSet { 'R' },
+            .mouse_trigger_type = MouseTriggerType::Left
         };
 
         initialize(config);
