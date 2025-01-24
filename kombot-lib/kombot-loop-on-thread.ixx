@@ -16,28 +16,7 @@ export namespace Kombot::LoopOnThread
 
     public:
 
-        LoopOnThread():
-            is_loop_running(),
-            loop_thread()
-        {
-            is_loop_running.test_and_set();
-            loop_thread = thread
-            {
-                [this]()
-                {
-                    while (is_loop_running.test())
-                    {
-                        if (iteration_condition()) execute_iteration();
-                    }
-                }
-            };
-        }
-
-        virtual ~LoopOnThread()
-        {
-            is_loop_running.clear();
-            loop_thread.join();
-        }
+        LoopOnThread() = default;
 
         LoopOnThread(const LoopOnThread& other) = delete;
         LoopOnThread& operator=(const LoopOnThread& other) = delete;
@@ -70,8 +49,41 @@ export namespace Kombot::LoopOnThread
             return *this;
         }
 
+        virtual ~LoopOnThread()
+        {
+            stop();
+        }
+
+        inline void start()
+        {
+            if (is_loop_running.test())
+                stop();
+
+            refresh_internal_state();
+            is_loop_running.test_and_set();
+
+            loop_thread = thread
+            {
+                [this]()
+                {
+                    while (is_loop_running.test())
+                    {
+                        if (iteration_condition()) execute_iteration();
+                    }
+                }
+            };
+        }
+
+        inline void stop()
+        {
+            is_loop_running.clear();
+            if (loop_thread.joinable())
+                loop_thread.join();
+        }
+
     protected:
 
+        virtual void refresh_internal_state() = 0;
         virtual bool iteration_condition() = 0;
         virtual void execute_iteration() = 0;
 

@@ -83,6 +83,10 @@ namespace Playground
                 .barrier_coefficient = 0.1,
                 .small_x_coefficient = 50,
                 .small_y_coefficient = 50
+
+                //.barrier_coefficient = 0.1,
+                //.small_x_coefficient = 60,
+                //.small_y_coefficient = 60
             },
             .keycodes_no = KeycodeSet { 'Q', '3' },
             .keycodes_always = KeycodeSet { '1', '2', '4', 'E' },
