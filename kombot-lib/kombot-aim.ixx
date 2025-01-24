@@ -34,13 +34,13 @@ using std::abs;
 using std::pow;
 using std::sqrt;
 using std::invalid_argument;
-using std::vector;
 using std::println;
 using std::cerr;
 using std::string;
+using std::format;
 using std::shared_ptr;
 using std::span;
-using std::min_element, std::max_element;
+using std::optional, std::nullopt, std::make_optional;
 
 export namespace Kombot::Aim
 {
@@ -89,6 +89,11 @@ export namespace Kombot::Aim
             {
                 return sqrt(pow(x, 2) + pow(y, 2));
             }
+
+            inline string to_string() const
+            {
+                return format("point x = {}, y = {}", x, y);
+            }
         };
 
         struct Rectangle
@@ -114,19 +119,6 @@ export namespace Kombot::Aim
                 return
                     left_upper.x < point.x && point.x < right_lower.x &&
                     left_upper.y < point.y && point.y < right_lower.y;
-            }
-
-            static inline Rectangle as_bound_of_points(span<const Point> points)
-            {
-                auto compare_by_m2 = [](const Point& a, const Point& b)
-                {
-                    return a.m2() < b.m2();
-                };
-
-                Point min = *min_element(points.begin(), points.end(), compare_by_m2);
-                Point max = *max_element(points.begin(), points.end(), compare_by_m2);
-
-                return Rectangle(min, max);
             }
         };
 
@@ -235,23 +227,21 @@ export namespace Kombot::Aim
 
         BgrPixel target_color;
         BgrPixel max_target_color_difference;
-        vector<Point> target;
 
         Point previous_target_average;
 
         FrameShooter frame_shooter;
 
-#ifdef KOMBOT_PERFORMANCE
+#if defined(KOMBOT_PERFORMANCE) || defined(KOMBOT_SAVE_FRAME)
         size_t total_frame_count;
-#endif
-
-#ifdef KOMBOT_SAVE_FRAME
-        size_t frame_count;
 #endif
 
     public:
 
-        Aimer(HdcScreen& screen, State& state, Shooter& shooter, AimConfig config):
+        Aimer(
+            HdcScreen& screen, State& state, Shooter& shooter,
+            AimConfig config
+        ):
             StateUser(state),
             shooter(shooter),
             screen_resolution_w(get_device_caps(screen.get(), DeviceCap::HorizontalResolution)),
@@ -274,7 +264,6 @@ export namespace Kombot::Aim
             },
             target_color(config.target_color),
             max_target_color_difference(config.max_target_color_difference),
-            target { },
             previous_target_average(config.frame_half_wh_px, config.frame_half_wh_px),
             frame_shooter
             {
@@ -285,10 +274,8 @@ export namespace Kombot::Aim
                 frame_wh
             }
         {
-            target.reserve(frame_wh * frame_wh);
-
-#ifdef KOMBOT_SAVE_FRAME
-            frame_count = 0;
+#if defined(KOMBOT_PERFORMANCE) || defined(KOMBOT_SAVE_FRAME)
+            total_frame_count = 0;
 #endif
         }
 
@@ -300,9 +287,14 @@ export namespace Kombot::Aim
 
     protected:
 
+        void refresh_internal_state() override
+        {
+            previous_target_average = Point(half_frame_wh, half_frame_wh);
+        }
+
         bool iteration_condition() override
         {
-            return check_mouse_trigger() && check_on_off_trigger();
+            return check_mouse_trigger();
         }
 
         void execute_iteration() override
@@ -310,7 +302,6 @@ export namespace Kombot::Aim
 #ifdef KOMBOT_PERFORMANCE
             auto start = std::chrono::high_resolution_clock::now();
 #endif
-            target.clear();
             aim_iteration();
 #ifdef KOMBOT_PERFORMANCE
             auto end = std::chrono::high_resolution_clock::now();
@@ -320,6 +311,8 @@ export namespace Kombot::Aim
                 auto count_per_second = 1000.0 / static_cast<double>(duration);
                 println("frame per second = {}", count_per_second);
             }
+#endif
+#if defined(KOMBOT_PERFORMANCE) || defined(KOMBOT_SAVE_FRAME)
             total_frame_count++;
 #endif
         }
@@ -340,24 +333,30 @@ export namespace Kombot::Aim
                 return;
             }
 
-            detect_target();
-
-#ifdef KOMBOT_LOG
-            println("target size = {}", target.size());
-#endif
-
-            if (target.empty())
+            optional<Rectangle> target = detect_target();
+            if (!target.has_value())
             {
                 shooter.notify_off_target();
+#ifdef KOMBOT_LOG
+                println("Target empty");
+#endif
                 return;
             }
 
-            Point current_target_average = target_average();
+            Point current_target_average = target_average(*target);
             if (previous_target_average == current_target_average)
                 return;
 
-            Rectangle bound = Rectangle::as_bound_of_points(target);
-            if (bound.is_point_in_rectangle(Point(half_frame_wh, half_frame_wh)))
+#ifdef KOMBOT_LOG
+            println(
+                "target: left upper = {}; right lower = {};",
+                target->left_upper.to_string(),
+                target->right_lower.to_string()
+            );
+            println("target_average = {}", current_target_average.to_string());
+#endif
+
+            if (target->is_point_in_rectangle(Point(half_frame_wh, half_frame_wh)))
             {
                 shooter.notify_on_target();
             }
@@ -388,24 +387,58 @@ export namespace Kombot::Aim
             { .blue = 0, .green = 255, .red = 0 };
 
             frame_shooter.dump_to_file(std::format("frame-altered-{}-{}.bmp", frame_count, time()));
-            frame_count++;
 #endif
 
             previous_target_average = current_target_average;
         }
 
-        inline void detect_target()
+        inline optional<Rectangle> detect_target()
         {
             MdFrameView md_frame_view = frame_shooter.get_md_frame_view();
-            for (auto y = 0; y != md_frame_view.extent(0); y++)
+
+            optional<Point> left_upper = find_left_upper_point(md_frame_view);
+            if (!left_upper.has_value())
+                return nullopt;
+
+            optional<Point> right_lower = find_right_lower_point(md_frame_view);
+            if (!left_upper.has_value())
+                return nullopt;
+
+            return make_optional<Rectangle>(*left_upper, *right_lower);
+        }
+
+        inline optional<Point> find_left_upper_point(const MdFrameView& md_frame_view) const
+        {
+            for (int y = 0; y != md_frame_view.extent(0); y++)
             {
-                for (auto x = 0; x != md_frame_view.extent(1); x++)
+                for (int x = 0; x != md_frame_view.extent(1); x++)
                 {
                     const BgrPixel& current = md_frame_view[y, x];
                     if (is_pixel_same_as_target(current))
-                        target.push_back(Point(x, y));
+                        return make_optional<Point>(
+                            static_cast<double>(x),
+                            static_cast<double>(y)
+                        );
                 }
             }
+            return nullopt;
+        }
+
+        inline optional<Point> find_right_lower_point(const MdFrameView& md_frame_view) const
+        {
+            for (int y = static_cast<int>(md_frame_view.extent(0)) - 1; y >= 0; y--)
+            {
+                for (int x = static_cast<int>(md_frame_view.extent(1)) - 1; x >= 0; x--)
+                {
+                    const BgrPixel& current = md_frame_view[y, x];
+                    if (is_pixel_same_as_target(current))
+                        return make_optional<Point>(
+                            static_cast<double>(x),
+                            static_cast<double>(y)
+                        );
+                }
+            }
+            return nullopt;
         }
 
         inline bool is_pixel_same_as_target(const BgrPixel& pixel) const
@@ -416,20 +449,11 @@ export namespace Kombot::Aim
                 abs(pixel.red - target_color.red) <= max_target_color_difference.red;
         }
 
-        inline Point target_average() const
+        static inline Point target_average(const Rectangle& target)
         {
-            double sum_x = 0;
-            double sum_y = 0;
-
-            for (const auto& p : target)
-            {
-                sum_x += p.x;
-                sum_y += p.y;
-            }
-
             return Point(
-                sum_x / (double)target.size(),
-                sum_y / (double)target.size()
+                (double)(target.left_upper.x + target.right_lower.x) / 2.0,
+                (double)(target.left_upper.y + target.right_lower.y) / 2.0
             );
         }
 

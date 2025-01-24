@@ -94,6 +94,11 @@ I : inverse delta sign)";
 
     protected:
 
+        void refresh_internal_state() override
+        {
+            return;
+        }
+
         bool iteration_condition() override
         {
             return is_moving.test();
@@ -318,6 +323,7 @@ I : inverse delta sign)";
         resource.input_listener = new InputListener(KVMSHook::key_hook_proc);
         resource.rotator = new Rotator(*(resource.state));
 
+        resource.rotator->start();
         Winapi::WinUser::Msg::start_message_loop();
     }
 }

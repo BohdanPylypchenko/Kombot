@@ -73,11 +73,6 @@ export namespace Kombot::Common
 
     protected:
 
-        inline bool check_on_off_trigger() const
-        {
-            return state.get<shared_ptr<atomic_flag>>(State::OnOffTrigger).get()->test();
-        }
-
         inline bool check_mouse_trigger() const
         {
             return state.get<shared_ptr<atomic_flag>>(State::IsMouseTrigger).get()->test();

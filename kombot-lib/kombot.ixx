@@ -75,6 +75,18 @@ namespace Kombot
         HdcScreen* screen;
         Shooter* shooter;
         Aimer* aimer;
+
+        inline void start()
+        {
+            shooter->start();
+            aimer->start();
+        }
+
+        inline void stop()
+        {
+            shooter->stop();
+            aimer->stop();
+        }
     };
 
     static Resource resource { };
@@ -137,11 +149,13 @@ namespace Kombot
                             state.get<shared_ptr<atomic_flag>>(State::OnOffTrigger).get();
                         if (on_off->test())
                         {
+                            resource.stop();
                             on_off->clear();
                             println("kombot is off");
                         }
                         else
                         {
+                            resource.start();
                             on_off->test_and_set();
                             println("kombot is on");
                         }
@@ -228,7 +242,7 @@ namespace Kombot
 
     export void start()
     {
-        println("Starting kombot");
+        println("Starting kombot (initial state - off)");
         start_message_loop();
     }
 

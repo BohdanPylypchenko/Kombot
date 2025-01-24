@@ -60,10 +60,8 @@ export namespace Kombot::Shoot
 
         inline void set_mode(ShootMode mode)
         {
-            if (this->mode.exchange(mode) != mode)
-                is_mode_changed.test_and_set();
-            else
-                is_mode_changed.clear();
+            this->mode.store(mode);
+            is_mode_changed.test_and_set();
         }
 
         inline void notify_on_target()
@@ -80,9 +78,19 @@ export namespace Kombot::Shoot
 
     protected:
 
+        void refresh_internal_state() override
+        {
+            is_active = false;
+
+            is_mode_changed.clear();
+
+            is_on_target.clear();
+            is_on_target_changed.clear();
+        }
+
         bool iteration_condition() override
         {
-            bool should_be_active = check_mouse_trigger() && check_on_off_trigger();
+            bool should_be_active = check_mouse_trigger();
 
             bool is_changed =
                 is_active != should_be_active ||
