@@ -82,7 +82,7 @@ export namespace Kombot::Shoot
 
         bool iteration_condition() override
         {
-            bool should_be_active = check_key_trigger() || check_mouse_trigger();
+            bool should_be_active = check_mouse_trigger() && check_on_off_trigger();
 
             bool is_changed =
                 is_active != should_be_active ||
