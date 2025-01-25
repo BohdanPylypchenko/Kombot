@@ -41,6 +41,7 @@ using std::format;
 using std::shared_ptr;
 using std::span;
 using std::optional, std::nullopt, std::make_optional;
+using std::string, std::ostringstream;
 
 export namespace Kombot::Aim
 {
@@ -57,6 +58,28 @@ export namespace Kombot::Aim
         double barrier_coefficient;
         double small_x_coefficient;
         double small_y_coefficient;
+
+        inline string to_string() const
+        {
+            ostringstream oss { };
+
+            oss <<
+                "AimConfig: " << '\n' <<
+                "blue: " << static_cast<int>(target_color.blue) << " +- " << static_cast<int>(max_target_color_difference.blue) << '\n' <<
+                "green: " << static_cast<int>(target_color.green) << " +- " << static_cast<int>(max_target_color_difference.green) << '\n' <<
+                "red: " << static_cast<int>(target_color.red) << " +- " << static_cast<int>(max_target_color_difference.red) << '\n' <<
+                "frame_half_wh (in px): " << frame_half_wh_px << '\n' <<
+                "screen_width_relation: " << screen_width_relation << '\n' <<
+                "screen_height_relation: " << screen_height_relation << '\n' <<
+                "mouse_x_ppd: " << mouse_x_ppd << '\n' <<
+                "mouse_y_ppd: " << mouse_y_ppd << '\n' <<
+                "horizontal_fov: " << horizontal_fov << '\n' <<
+                "barrier_coefficient: " << barrier_coefficient << '\n' <<
+                "small_x_coefficient: " << small_x_coefficient << '\n' <<
+                "small_y_coefficient: " << small_y_coefficient;
+
+            return oss.str();
+        }
     };
 
     class Aimer : public LoopOnThread, public StateUser
@@ -215,6 +238,21 @@ export namespace Kombot::Aim
 
                 return result;
             }
+
+            inline string to_string() const
+            {
+                ostringstream oss { };
+
+                oss <<
+                    "AimVectorCalculator:" << '\n' <<
+                    "big_x_coefficient: " << big_x_coefficient << '\n' <<
+                    "big_y_coefficient: " << big_y_coefficient << '\n' <<
+                    "small_x_coefficient: " << small_x_coefficient << '\n' <<
+                    "small_y_coefficient: " << small_y_coefficient << '\n' <<
+                    "barrier2: " << barrier2;
+
+                return oss.str();
+            }
         };
 
         Shooter& shooter;
@@ -284,6 +322,24 @@ export namespace Kombot::Aim
 
         Aimer(Aimer&& other) = default;
         Aimer& operator=(Aimer&& other) = default;
+
+        inline string to_string() const
+        {
+            ostringstream oss { };
+
+            oss <<
+                "Aimer: " << '\n' <<
+                "blue: " << static_cast<int>(target_color.blue) << " +- " << static_cast<int>(max_target_color_difference.blue) << '\n' <<
+                "green: " << static_cast<int>(target_color.green) << " +- " << static_cast<int>(max_target_color_difference.green) << '\n' <<
+                "red: " << static_cast<int>(target_color.red) << " +- " << static_cast<int>(max_target_color_difference.red) << '\n' <<
+                "screen_resolution_w: " << screen_resolution_w << '\n' <<
+                "screen_resolution_h: " << screen_resolution_h << '\n' <<
+                "half_frame_wh: " << half_frame_wh << '\n' <<
+                "frame_wh: " << frame_wh << '\n' <<
+                avc.to_string();
+
+            return oss.str();
+        }
 
     protected:
 
