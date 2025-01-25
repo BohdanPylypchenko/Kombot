@@ -220,7 +220,7 @@ export namespace Kombot::Aim
 
             inline Point convert_to_aim_vector_scale(const Point& target_point)
             {
-                Point result = convert_to_aim_vector_simple(target_point);
+                Point result(target_point);
 
                 if (result.m2() > barrier2 &&
                     !is_previous_move_big)
@@ -400,6 +400,25 @@ export namespace Kombot::Aim
             }
 
             Point current_target_average = target_average(*target);
+
+            if (target->is_point_in_rectangle(Point(half_frame_wh, half_frame_wh)))
+            {
+                shooter.notify_on_target();
+#ifdef KOMBOT_LOG
+                println("Is on target");
+#endif
+            }
+            else
+            {
+                shooter.notify_off_target();
+                maybe_aim_with_average(current_target_average);
+            }
+
+            previous_target_average = current_target_average;
+        }
+
+        inline void maybe_aim_with_average(const Point& current_target_average)
+        {
             if (previous_target_average == current_target_average)
                 return;
 
@@ -412,15 +431,11 @@ export namespace Kombot::Aim
             println("target_average = {}", current_target_average.to_string());
 #endif
 
-            if (target->is_point_in_rectangle(Point(half_frame_wh, half_frame_wh)))
-            {
-                shooter.notify_on_target();
-            }
-            else
-            {
-                shooter.notify_off_target();
-                aim_with_vector(avc.convert_to_aim_vector_scale(current_target_average));
-            }
+            aim_with_vector(
+                avc.convert_to_aim_vector_scale(
+                    avc.convert_to_aim_vector_simple(current_target_average)
+                )
+            );
 
 #ifdef KOMBOT_SAVE_FRAME
             frame_shooter.dump_to_file(std::format("frame-original-{}-{}.bmp", frame_count, time()));
@@ -444,8 +459,6 @@ export namespace Kombot::Aim
 
             frame_shooter.dump_to_file(std::format("frame-altered-{}-{}.bmp", frame_count, time()));
 #endif
-
-            previous_target_average = current_target_average;
         }
 
         inline optional<Rectangle> detect_target()
