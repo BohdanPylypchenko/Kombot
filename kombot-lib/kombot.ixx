@@ -40,8 +40,9 @@ using std::atomic_flag;
 using std::shared_ptr, std::make_shared;
 using std::unordered_set;
 using std::vector;
-using std::println;
+using std::println, std::print;
 using std::unreachable;
+using std::ostringstream;
 
 namespace Kombot
 {
@@ -56,12 +57,57 @@ namespace Kombot
 
         struct Config
         {
+        public:
+
             Dword on_off_keycode;
             AimConfig aim_config;
             KeycodeSet keycodes_no;
             KeycodeSet keycodes_always;
             KeycodeSet keycodes_on_target;
             MouseTriggerType mouse_trigger_type;
+
+            inline string to_string() const
+            {
+                string str_mouse_trigger_type { };
+                switch (mouse_trigger_type)
+                {
+                case MouseTriggerType::Left:
+                    str_mouse_trigger_type = "left";
+                    break;
+                case MouseTriggerType::Right:
+                    str_mouse_trigger_type = "right";
+                    break;
+                default:
+                    unreachable();
+                }
+
+                ostringstream oss { };
+
+                oss <<
+                    "Config:" << '\n' <<
+                    "on_off_keycode: " << static_cast<char>(on_off_keycode) << '\n' <<
+                    "keycodes_on: " << keycode_set_to_str(keycodes_no) << '\n' <<
+                    "keycodes_always: " << keycode_set_to_str(keycodes_always) << '\n' <<
+                    "keycodes_on_target: " << keycode_set_to_str(keycodes_on_target) << '\n' <<
+                    "mouse_trigger_type: " << str_mouse_trigger_type << '\n' <<
+                    aim_config.to_string();
+
+                return oss.str();
+            }
+
+        private:
+
+            static inline string keycode_set_to_str(const KeycodeSet& set)
+            {
+                ostringstream oss { };
+
+                oss << "{ ";
+                for (Dword k : set)
+                    oss << static_cast<char>(k) << ' ';
+                oss << '}';
+
+                return oss.str();
+            }
         };
     }
 
@@ -121,6 +167,10 @@ namespace Kombot
 
     export void initialize(const Config& config)
     {
+        print("\n\n===\n\n");
+        println("{}", config.to_string());
+        print("\n\n===\n\n");
+
         resource.state = new State
         {
             unordered_map<string, any>
@@ -237,7 +287,11 @@ namespace Kombot
             *resource.screen, *resource.state, *resource.shooter, config.aim_config
         );
 
-        println("Initialized kombot");
+        println("Initialized kombot.");
+
+        print("\n\n===\n\n");
+        println("{}", resource.aimer->to_string());
+        print("\n\n===\n\n");
     }
 
     export void start()
