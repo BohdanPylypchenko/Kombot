@@ -22,8 +22,6 @@ using Kombot::Decide::Decision;
 using Kombot::LoopOnThread::LoopOnThread;
 
 import std;
-using std::atomic_flag;
-using std::thread;
 using std::println, std::cerr;
 using std::unordered_map;
 using std::string;
@@ -70,7 +68,6 @@ I : inverse delta sign)";
         State& state;
         Dword dx;
         Dword dy;
-        atomic_flag is_moving;
 
     public:
 
@@ -84,12 +81,7 @@ I : inverse delta sign)";
         {
             this->dx = dx;
             this->dy = dy;
-            is_moving.test_and_set();
-        }
-
-        inline void stop()
-        {
-            is_moving.clear();
+            start();
         }
 
     protected:
@@ -101,7 +93,7 @@ I : inverse delta sign)";
 
         bool iteration_condition() override
         {
-            return is_moving.test();
+            return true;
         }
 
         void execute_iteration() override
@@ -323,7 +315,6 @@ I : inverse delta sign)";
         resource.input_listener = new InputListener(KVMSHook::key_hook_proc);
         resource.rotator = new Rotator(*(resource.state));
 
-        resource.rotator->start();
         Winapi::WinUser::Msg::start_message_loop();
     }
 }
