@@ -48,9 +48,9 @@ namespace Playground
             {
                 .target_color =
                 {
-                    .blue = 60,
-                    .green = 60,
-                    .red = 222
+                    .blue = 10,
+                    .green = 10,
+                    .red = 245
                 },
                 .max_target_color_difference =
                 {
@@ -58,7 +58,7 @@ namespace Playground
                     //.green = 25,
                     .blue = 10,
                     .green = 10,
-                    .red = 30
+                    .red = 10
                 },
                 .frame_half_wh_px = 128,
                 .screen_width_relation = 16,
