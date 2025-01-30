@@ -16,7 +16,6 @@ using Kombot::Common::StateUser;
 
 import std;
 using std::atomic_flag;
-using std::atomic;
 using std::unreachable;
 
 export namespace Kombot::Shoot
@@ -35,7 +34,7 @@ export namespace Kombot::Shoot
 
         bool is_active;
 
-        atomic<ShootMode> mode;
+        ShootMode mode;
         atomic_flag is_mode_changed;
 
         atomic_flag is_on_target;
@@ -60,7 +59,7 @@ export namespace Kombot::Shoot
 
         inline void set_mode(ShootMode mode)
         {
-            this->mode.store(mode);
+            this->mode = mode;
             is_mode_changed.test_and_set();
         }
 
@@ -117,7 +116,7 @@ export namespace Kombot::Shoot
 
         inline void activate() const
         {
-            switch (mode.load())
+            switch (mode)
             {
             case ShootMode::No:
                 break;
@@ -137,7 +136,7 @@ export namespace Kombot::Shoot
 
         inline void deactivate() const
         {
-            switch (mode.load())
+            switch (mode)
             {
             case ShootMode::No:
                 send_mouse_input_with_flags(stop_shoot_flag);
