@@ -165,11 +165,8 @@ namespace Kombot
         }
     };
 
-    export void initialize(const Config& config)
+    export void run(const Config& config)
     {
-        print("\n\n===\n\n");
-        println("{}", config.to_string());
-        print("\n\n===\n\n");
 
         resource.state = new State
         {
@@ -292,10 +289,7 @@ namespace Kombot
         print("\n\n===\n\n");
         println("{}", resource.aimer->to_string());
         print("\n\n===\n\n");
-    }
 
-    export void start()
-    {
         println("Starting kombot (initial state - off)");
         start_message_loop();
     }
