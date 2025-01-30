@@ -10,12 +10,9 @@ using Winapi::Display::DeviceCap;
 
 import kombot;
 using namespace Kombot::Konfig;
-using Kombot::initialize;
-using Kombot::start;
-using Kombot::cleanup;
 
 import std;
-using std::println;
+using std::println, std::print;
 using namespace std::chrono_literals;
 
 namespace Playground
@@ -28,7 +25,7 @@ namespace Playground
             control_event == static_cast<Dword>(ControlEvent::Logoff) ||
             control_event == static_cast<Dword>(ControlEvent::Shutdown)
         ) {
-            cleanup();
+            Kombot::cleanup();
         }
         return False;
     }
@@ -94,8 +91,11 @@ namespace Playground
             .mouse_trigger_type = MouseTriggerType::Left
         };
 
-        initialize(config);
-        start();
+        print("\n\n===\n\n");
+        println("{}", config.to_string());
+        print("\n\n===\n\n");
+
+        Kombot::run(config);
     }
 }
 
