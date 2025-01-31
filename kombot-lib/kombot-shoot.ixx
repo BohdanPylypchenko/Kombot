@@ -66,6 +66,8 @@ export namespace Kombot::Shoot
 
         inline void notify_on_target()
         {
+            if (mode.load() == ShootMode::OnTarget)
+                send_mouse_input_with_flags(start_shoot_flag);
             is_on_target.test_and_set();
             is_on_target_changed.test_and_set();
         }
