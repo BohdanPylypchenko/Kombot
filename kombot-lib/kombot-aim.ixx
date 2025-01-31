@@ -399,6 +399,14 @@ export namespace Kombot::Aim
                 return;
             }
 
+#ifdef KOMBOT_LOG
+            println(
+                "target: left upper = {}; right lower = {};",
+                target->left_upper.to_string(),
+                target->right_lower.to_string()
+            );
+#endif
+
             Point current_target_average = target_average(*target);
 
             if (target->is_point_in_rectangle(Point(half_frame_wh, half_frame_wh)))
@@ -423,11 +431,6 @@ export namespace Kombot::Aim
                 return;
 
 #ifdef KOMBOT_LOG
-            println(
-                "target: left upper = {}; right lower = {};",
-                target->left_upper.to_string(),
-                target->right_lower.to_string()
-            );
             println("target_average = {}", current_target_average.to_string());
 #endif
 
