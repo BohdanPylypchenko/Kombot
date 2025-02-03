@@ -41,6 +41,10 @@ export namespace Kombot::Shoot
         atomic_flag is_on_target;
         atomic_flag is_on_target_changed;
 
+#ifndef KOMBOT_MAYBE_SHOOT_ALWAYS
+        atomic_flag is_shooting;
+#endif
+
     public:
 
         Shooter(State& state):
@@ -50,7 +54,10 @@ export namespace Kombot::Shoot
             is_mode_changed(),
             is_on_target(),
             is_on_target_changed()
-        { }
+#ifndef KOMBOT_MAYBE_SHOOT_ALWAYS
+            ,is_shooting()
+#endif
+        {}
 
         Shooter(const Shooter& other) = delete;
         Shooter& operator=(const Shooter& other) = delete;
@@ -67,7 +74,7 @@ export namespace Kombot::Shoot
         inline void notify_on_target()
         {
             if (mode.load() == ShootMode::OnTarget)
-                send_mouse_input_with_flags(start_shoot_flag);
+                maybe_start_shoot();
             is_on_target.test_and_set();
             is_on_target_changed.test_and_set();
         }
@@ -75,7 +82,7 @@ export namespace Kombot::Shoot
         inline void notify_off_target()
         {
             if (mode.load() == ShootMode::OnTarget)
-                send_mouse_input_with_flags(stop_shoot_flag);
+                maybe_stop_shoot();
             is_on_target.clear();
             is_on_target_changed.test_and_set();
         }
@@ -90,6 +97,10 @@ export namespace Kombot::Shoot
 
             is_on_target.clear();
             is_on_target_changed.clear();
+
+#ifndef KOMBOT_MAYBE_SHOOT_ALWAYS
+            is_shooting.clear();
+#endif
         }
 
         bool iteration_condition() override
@@ -119,42 +130,65 @@ export namespace Kombot::Shoot
 
     private:
 
-        inline void activate() const
+        inline void activate()
         {
             switch (mode.load())
             {
             case ShootMode::No:
                 break;
             case ShootMode::Always:
-                send_mouse_input_with_flags(start_shoot_flag);
+                maybe_start_shoot();
                 break;
             case ShootMode::OnTarget:
                 if (is_on_target.test())
-                    send_mouse_input_with_flags(start_shoot_flag);
+                    maybe_start_shoot();
                 else
-                    send_mouse_input_with_flags(stop_shoot_flag);
+                    maybe_stop_shoot();
                 break;
             default:
                 unreachable();
             }
         }
 
-        inline void deactivate() const
+        inline void deactivate()
         {
             switch (mode.load())
             {
             case ShootMode::No:
-                send_mouse_input_with_flags(stop_shoot_flag);
+                maybe_stop_shoot();
                 break;
             case ShootMode::Always:
-                send_mouse_input_with_flags(stop_shoot_flag);
+                maybe_stop_shoot();
                 break;
             case ShootMode::OnTarget:
-                send_mouse_input_with_flags(stop_shoot_flag);
+                maybe_stop_shoot();
                 break;
             default:
                 unreachable();
             }
+        }
+
+        inline void maybe_start_shoot()
+        {
+#ifdef KOMBOT_MAYBE_SHOOT_ALWAYS
+            send_mouse_input_with_flags(start_shoot_flag);
+#else
+            if (!is_shooting.test_and_set())
+                send_mouse_input_with_flags(start_shoot_flag);
+#endif
+        }
+
+        inline void maybe_stop_shoot()
+        {
+#ifdef KOMBOT_MAYBE_SHOOT_ALWAYS
+            send_mouse_input_with_flags(stop_shoot_flag);
+#else
+            if (is_shooting.test())
+            {
+                send_mouse_input_with_flags(stop_shoot_flag);
+                is_shooting.clear();
+            }
+#endif
         }
 
         static inline void send_mouse_input_with_flags(Dword flags)
